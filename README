@@ -1,0 +1,8 @@
+The way it works is as simple as 1,2,3:
+
+Every peer is a webserver that replies to specific POST/GET requests
+Peers can be either dedicated (webserver) or hybrid (webserver and client)
+Every peer is a tracker, so the starting point is any peer's url.
+Like any modern peer to peer system, pomares shares chunks of files and may list a tree of shared files. And now that we've mentioned the word 'tree', you might be wondering what the hell 'Pomares' means: It's a Portuguese word for 'orchards'.
+
+Yes. Orchards are composed by trees and trees have fruit. And because sharing apples, bananas and oranges with a group of friends might lead to making the world's most delicious fruit salad, sharing bytes of knowledge might lead to the world's best ideas and the worlds best ideas lead to whatever we enjoy most in life. That's right: fruit!
