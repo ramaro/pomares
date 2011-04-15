@@ -85,7 +85,7 @@ def start_db(db_name, db_path, init_sql=None):
 	
 
 def stop_db(db_name):
-	"""Stop da database given a name"""
+	"""Stop a database given a name"""
 	if db_name in databases:
 		d = databases[db_name]
 		d.close()

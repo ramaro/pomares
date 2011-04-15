@@ -97,7 +97,7 @@ def file_chunk(filepath, file_size, chunk_number, compress=False, fileobj=None):
 		f = fileobj
 	else:
 		f = open(filepath, 'r')
-		print 'open!'
+		#print 'open!'
 
 	f.seek(chunk_size*chunk_number)
 	buff = f.read(chunk_size)
