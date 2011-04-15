@@ -70,6 +70,8 @@ class DB(threading.Thread):
 				for row in self.cursor:
 					result.put(row)
 				result.put('!empty!')
+			else:
+				self.db.commit()
 
 		self.cursor.close()
 
@@ -135,7 +137,7 @@ if __name__ == '__main__':
 	for row in resolv.select("""select * from uuid"""):
 		print row
 	
-	resolv.execute("""insert into uuid (id, url, timestamp) values (?, ?, datetime())""", ('test', 'http://test.com:8080'))
+	resolv.execute("""insert or replace into uuid (id, url, timestamp) values (?, ?, datetime())""", ('test', 'http://test.com:8080'))
 
 	for row in resolv.select("""select * from uuid"""):
 		print row
