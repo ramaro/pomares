@@ -6,6 +6,7 @@ import base64
 import os
 import time
 
+import resolver
 import toc
 from file import File, file_chunk, hash_buffer
 from serialize import pack, unpack
@@ -75,13 +76,17 @@ def close_openfiles():
 
 def new_fileobj(hash):
 	"""Returns a new client file object for a hash"""
-	tocs = toc.TOC()
-	results = tocs.whoHas(hash)
+	results = toc.whoHas(hash)
 
-	if len(results) is 0:
+	value = None
+	for res in results:
+		value = res
+		break
+
+	if value is None:
 		raise Exception('couldnt find file in toc:%s.' % hash)
 
-	pomares_id, filename, filesize, dirname, pomar = results[0] #grab the first result
+	pomares_id, filename, filesize, dirname, pomar = value #grab the first result
 	download_dir = os.path.join(config.download_path, dirname)
 	relpath = os.path.relpath(download_dir, config.download_path)
 
@@ -139,9 +144,8 @@ def to_client(handler):
 		return False
 
 def request_client_LIST(handler):
-	tocs = toc.TOC()
 	compress = client_compressed(handler)
-	buffer = pack('LIST', tocs.lastUpdates(handler.request_pomar))
+	buffer = pack('LIST', toc.lastUpdates(handler.request_pomar))
 
 	if compress:
 		buffer = zlib.compress(buffer)
@@ -153,14 +157,13 @@ def request_client_LIST(handler):
 
 def request_client_PLIST(handler):
 	if keys_exist(handler.request_args, ('from', 'to')):
-		tocs = toc.TOC()
 		compress = client_compressed(handler)
 		buffer = ''
 		if handler.pomares_id:
-			buffer = pack('PLIST', tocs.listVersion(handler.pomares_id, 
+			buffer = pack('PLIST', toc.listVersion(handler.pomares_id, 
 				(handler.request_args['from'], handler.request_args['to']), handler.request_pomar))
 		else:
-			buffer = pack('PLIST', tocs.listVersion(config.my_uuid, 
+			buffer = pack('PLIST', toc.listVersion(config.my_uuid, 
 				(handler.request_args['from'], handler.request_args['to']), handler.request_pomar))
 
 		if compress:
@@ -175,8 +178,7 @@ def request_client_PLIST(handler):
 
 def request_client_FILE(handler):
 	if keys_exist(handler.request_args, ('hash', 'chunk')):
-		tocs = toc.TOC()
-		filename_size = tocs.pathFor(handler.request_args['hash'], handler.request_pomar)
+		filename_size = toc.pathFor(handler.request_args['hash'], handler.request_pomar)
 		fileobj = openfile_for(handler.request_args['hash'])
 		
 		compress = client_compressed(handler)
@@ -209,8 +211,7 @@ def request_client_FILE(handler):
 
 def request_client_RESOLV(handler):
 	if handler.pomares_id:
-		resolv = toc.Resolver()
-		who = resolv.resolve(handler.pomares_id)
+		who = resolver.resolve(handler.pomares_id)
 
 		if who:
 			buffer = pack('RESOLV',(handler.pomares_id, who))
@@ -266,17 +267,15 @@ def request_server_LIST(handler):
 	if not buffer.has_key('LIST'):
 		raise KeyError('LIST request type not present')
 
-	tocs = toc.TOC()
-	resolv = toc.Resolver()
 
 	#Update url timestamp
-	resolv.update(pomares_id, '%s://%s' % (handler.request.parsed_url.scheme, handler.request.parsed_url.netloc))
+	resolver.update(pomares_id, '%s://%s' % (handler.request.parsed_url.scheme, handler.request.parsed_url.netloc))
 
 	for recvd_pomares_id, recvd_list_version in buffer['LIST']:
-		recvd_url = resolv.resolve(recvd_pomares_id)
+		recvd_url = resolver.resolve(recvd_pomares_id)
 
 		if recvd_url:
-			recvd_from_version = tocs.lastVersionFor(recvd_pomares_id, pomar=pomar)
+			recvd_from_version = toc.lastVersionFor(recvd_pomares_id, pomar=pomar)
 
 			if recvd_from_version is None:
 				recvd_from_version = 0 
@@ -291,7 +290,7 @@ def request_server_LIST(handler):
 				request_queue.put(req)
 		else:
 			#mark as unknown:
-			resolv.update(recvd_pomares_id, None)
+			resolver.update(recvd_pomares_id, None)
 
 			#and request a RESOLV:
 			req = Request('RESOLV', {'pomares_id':recvd_pomares_id}, internal={'url':url} )
@@ -325,11 +324,9 @@ def request_server_FILE(handler):
 	if not buffer.has_key('FILE'):
 		raise KeyError('FILE request type not present')
 
-	tocs = toc.TOC()
-	resolv = toc.Resolver()
 
 	#Update url timestamp
-	resolv.update(pomares_id, '%s://%s' % (handler.request.parsed_url.scheme, handler.request.parsed_url.netloc))
+	resolver.update(pomares_id, '%s://%s' % (handler.request.parsed_url.scheme, handler.request.parsed_url.netloc))
 
 	#try:
 	chunk_number, buffer, hash  = buffer['FILE']
@@ -378,23 +375,21 @@ def request_server_PLIST(handler):
 	if not buffer.has_key('PLIST'):
 		raise KeyError('PLIST request type not present')
 
-	tocs = toc.TOC()
-	resolv = toc.Resolver()
 
 	#Update url timestamp
-	resolv.update(pomares_id, '%s://%s' % (handler.request.parsed_url.scheme, handler.request.parsed_url.netloc))
+	resolver.update(pomares_id, '%s://%s' % (handler.request.parsed_url.scheme, handler.request.parsed_url.netloc))
 
 	for recvd_filename, recvd_size, recvd_hash, recvd_pomares_id, recvd_path, recvd_listversion in buffer['PLIST']:
 		#TODO: deprecate from:to and use only one version number in hex or other cool format
 
-		tocs.update({'filename':recvd_filename, 'size':recvd_size, 'hash':recvd_hash, 'uuid':recvd_pomares_id,
+		toc.update({'filename':recvd_filename, 'size':recvd_size, 'hash':recvd_hash, 'uuid':recvd_pomares_id,
 					'dirname':recvd_path, 'listversion':recvd_listversion}, 
 					pomar) 
 
-		recvd_url = resolv.resolve(recvd_pomares_id)
+		recvd_url = resolver.resolve(recvd_pomares_id)
 
 		if recvd_url is None:
-			resolv.update(recvd_pomares_id, None)
+			resolver.update(recvd_pomares_id, None)
 			req = Request('RESOLV', {'pomares_id':recvd_pomares_id}, internal={'url':url} )
 			request_queue.put(req)
 		
@@ -420,7 +415,6 @@ def request_server_RESOLV(handler):
 	if not buffer.has_key('RESOLV'):
 		raise KeyError('RESOLV request type not present')
 
-	resolv = toc.Resolver()
 
 	#TODO: create a probabilistic way to determine if a RESOLV value is good 
 	#by comparing with other RESOLV values for the same query
@@ -428,7 +422,7 @@ def request_server_RESOLV(handler):
 
 	recvd_pomares_id, recvd_url = buffer['RESOLV']
 	#Update url timestamp
-	resolv.update(recvd_pomares_id, recvd_url)
+	resolver.update(recvd_pomares_id, recvd_url)
 
 
 	print 'client RESOLV'

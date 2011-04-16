@@ -19,6 +19,7 @@ class DB(threading.Thread):
 		self.db_path = db_path
 		self.init_sql = init_sql
 
+		self.setDaemon(True)
 		self.start()
 
 	def execute(self, sql, args=None, result=None):
@@ -47,6 +48,7 @@ class DB(threading.Thread):
 		
 	def run(self):
 		"""Run thread"""
+
 		if os.path.exists(self.db_path):
 			self.db = sqlite3.connect(self.db_path)
 			self.cursor = self.db.cursor()
@@ -54,8 +56,9 @@ class DB(threading.Thread):
 			self.db = sqlite3.connect(self.db_path)
 			self.cursor = self.db.cursor()
 
-		if self.init_sql:
-			self.cursor.execute(self.init_sql)
+			if self.init_sql:
+				self.cursor.execute(self.init_sql)
+				log.log('created database: %s' % self.db_path)
 
 		while True:
 			sql, args, result = self.queue.get()

@@ -9,6 +9,7 @@ import re
 import StringIO
 
 import toc
+import resolver
 import config
 import log
 import talk
@@ -225,17 +226,15 @@ class Client(threading.Thread):
 
 		#FILE requests have no determined address:
 		if request.type is 'FILE' and request.address is None:
-				tocs = toc.TOC()
-				resolv = toc.Resolver()
 
 				#FIXME this should be a lazy check and should cache in memory every x secs...SLOW
 				#using whoHas is not good...should write a proxy function...
 				#also need to use indexes on tables....
-				results = tocs.whoHas(request.args['hash'])
+				results = toc.whoHas(request.args['hash'])
 				busy_url = None
 
 				for pomares_id, filename, filesize, dirname, pomar in results:
-					url = resolv.resolve(pomares_id)
+					url = resolver.resolve(pomares_id)
 
 					if url:
 						address = address_for(url)

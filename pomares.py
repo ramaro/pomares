@@ -1,7 +1,16 @@
 #!/usr/bin/env python
 
-import getopt, sys, signal
-import nectar.server, nectar.cli
+import nectar.server
+import nectar.cli
+import nectar.db
+import nectar.toc
+import nectar.resolver
+import nectar.config
+
+import getopt
+import sys
+import signal
+
 
 def usage():
 	print """Usage: %s [options]
@@ -51,9 +60,13 @@ def main():
 		elif option in ("-d", "-v", "--debug", "--verbose"):
 			debug=True
 
-	#print client_only, server_only, debug
 	
 	init_signals()
+
+	nectar.db.start_db('toc', nectar.config.toc_file, init_sql=nectar.toc.initialise)
+	nectar.db.start_db('resolv', nectar.config.uuid_file, init_sql=nectar.resolver.initialise)
+	nectar.toc.set_db('toc')
+	nectar.resolver.set_db('resolv')
 
 	if server_only:
 		s = nectar.server.Server()

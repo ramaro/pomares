@@ -1,21 +1,12 @@
 """The Table of Contents module.
 It keeps track of the history and locations of all files and peers."""
 
-import config, os, sqlite3, log
-from config import my_uuid
+import config
+import os
+import log
+import db
 
-class TOC():
-	"""The TOC (Table of Contents) class."""
-
-	def __init__(self, toc_filepath=config.toc_file):
-		if os.path.exists(toc_filepath):
-			self.db = sqlite3.connect(toc_filepath)
-			self.cursor = self.db.cursor()
-		else:
-			self.db = sqlite3.connect(toc_filepath)
-			self.cursor = self.db.cursor()
-			self.cursor.execute(
-			"""
+initialise ="""
 			CREATE TABLE IF NOT EXISTS "toc" (
 			    "filename" TEXT NOT NULL,
 			    "size" INTEGER NOT NULL,
@@ -27,198 +18,128 @@ class TOC():
 			    "timestamp" DATETIME NOT NULL,
 			    PRIMARY KEY (filename, size, hash, uuid, dirname, pomar)	
 			)
-			"""
-			)
-			self.cursor.execute(
-			"""
 			CREATE TABLE IF NOT EXISTS "locations" (
 			    "pomar" TEXT NOT NULL,
 			    "pathname" TEXT NOT NULL,
 			    PRIMARY KEY (pomar, pathname)
 			)
 			"""
-			)
+database = None
 
-			self.cursor.execute(
-			"""
-			CREATE TABLE IF NOT EXISTS "peer_usage" (
-			    "hash" TEXT NOT NULL,
-			    "uuid" TEXT NOT NULL,
-			    "pomar" TEXT NOT NULL,
-			    "usage" INTEGER NOT NULL,
-			    PRIMARY KEY (hash, uuid)
-			)
-			"""
-			)
-			
-			self.db.commit()
-
-			log.log('created toc database: %s' % toc_filepath)
-
-	def __del__(self):
-		self.db.close()
-
-	def peerFor(self, hash):
-		"""Returns an usage-evaluated uuid for a given hash."""
-
-		self.cursor.execute("""
-		insert or ignore into peer_usage (hash, uuid, pomar, usage) 
-		select hash, uuid, pomar, 0 from toc where hash=? 
-		group by pomar, uuid having max(listversion)
-		""", (hash, )
-		)
-		self.db.commit()
-		
-		self.cursor.execute("""
-		select uuid, pomar, usage from peer_usage 
-		where hash=? and usage > -2 order by usage asc limit 1
-		""", (hash, )
-		)
-
-		return self.cursor.fetchone()
-
-	def peerSuccess(self, uuid, hash, success=True):
-		"""Increases the usage counter for a specific peer and hash."""
-
-		self.cursor.execute("""
-		select usage from peer_usage
-		where uuid=? and hash=?
-		""", (uuid, hash,)
-		)
-		prev_usage = self.cursor.fetchone()
-
-		if prev_usage is None:
-			return
-
-		new_usage = prev_usage[0]+1
-
-		if not success:
-			new_usage = prev_usage[0]-1
-
-		self.cursor.execute("""
-		update or ignore peer_usage
-		set usage=?
-		where uuid=? and hash=?
-		""", (new_usage, uuid, hash)
-		)
-
-		print 'success', new_usage, uuid, hash, success
-			
-		self.db.commit()
+def set_db(db_name):
+	"""Sets sqlite database"""
+	global database
+	database = db.get_db(db_name)
 
 
+def lastVersionFor(pomares_id, pomar='/'):
+	"""Returns the latest listversion for a pomares_id."""
 
-	def lastVersionFor(self, pomares_id, pomar='/'):
-		"""Returns the latest listversion for a pomares_id."""
+	results = database.select("""
+	select max(listversion) from toc where uuid=? and pomar=?
+	""", (pomares_id, sanitize_pomar(pomar))
+	)
 
-		self.cursor.execute("""
-		select max(listversion) from toc where uuid=? and pomar=?
-		""", (pomares_id, sanitize_pomar(pomar))
-		)
+	for res in results:
+		return res[0]
 
-		val = self.cursor.fetchone()
-		if val is not None:
-			return val[0]
-		
-		return val
-
-	def lastUpdates(self, pomar='/'):
-		"""Returns a list of pomares-IDs and latest listversions."""
-
-		self.cursor.execute("""
-		select uuid,listversion from toc where pomar=? group by uuid having max(listversion)
-		""", (sanitize_pomar(pomar),)
-		)
-
-		return self.cursor.fetchall()
+	return None
 
 
-	def listVersion(self, pomares_id, from_to, pomar='/'):
-		"""Returns a list of files for a pomares_id between versions in from_to tuple"""
-		
-		self.cursor.execute("""
-		select filename, size, hash, uuid, dirname, listversion from toc 
-		where uuid=? and pomar=? and listversion between ? and ?
-		""", (pomares_id, sanitize_pomar(pomar), from_to[0], from_to[1])
-		)
-		
-		return self.cursor.fetchall()
+def lastUpdates(pomar='/'):
+	"""Returns a list of pomares-IDs and latest listversions."""
 
-	def whoHas(self, hash, orderByTime=True):
-		"""Returns the uuids with respective filenames, filesizes, dirnames and pomar for hash."""
+	results = database.select("""
+	select uuid,listversion from toc where pomar=? group by uuid having max(listversion)
+	""", (sanitize_pomar(pomar),)
+	)
 
-		order_string=""
+	return results
 
-		if orderByTime:
-			order_string = "order by timestamp desc"
 
-		self.cursor.execute("""
-		select uuid, filename, size, dirname, pomar from toc where hash=? 
-		group by pomar, uuid having max(listversion) %s
-		""" % order_string, (hash,) 
-		)
+def listVersion(pomares_id, from_to, pomar='/'):
+	"""Returns a list of files for a pomares_id between versions in from_to tuple"""
+	
+	results = database.select("""
+	select filename, size, hash, uuid, dirname, listversion from toc 
+	where uuid=? and pomar=? and listversion between ? and ?
+	""", (pomares_id, sanitize_pomar(pomar), from_to[0], from_to[1])
+	)
+	
+	return results
 
-		return self.cursor.fetchall()
+def whoHas(hash, orderByTime=True):
+	"""Returns the uuids with respective filenames, filesizes, dirnames and pomar for hash."""
 
-	def update(self, values, pomar='/', commit=True):
-		"""Updates toc with values for dict {filename, size, hash, uuid, dirname, listversion, pomar}."""
+	order_string=""
 
-		self.cursor.execute("""
-		insert or ignore into toc (filename, size, hash, uuid, dirname, listversion, pomar, timestamp) 
-		values (?, ?, ?, ?, ?, ?, ?, datetime())
-		""", (values['filename'], values['size'], values['hash'], 
-			values['uuid'], values['dirname'], values['listversion'], sanitize_pomar(pomar))
-		)
+	if orderByTime:
+		order_string = "order by timestamp desc"
 
-		if commit:
-			self.db.commit()
+	results = database.select("""
+	select uuid, filename, size, dirname, pomar from toc where hash=? 
+	group by pomar, uuid having max(listversion) %s
+	""" % order_string, (hash,) 
+	)
 
-	def updatePomarPath(self, pomar, path):
-		"""Updates toc with pomar and its pathname location on the disk."""
+	return results
 
-		self.cursor.execute("""
-		insert or ignore into locations (pomar, pathname) 
-		values (?, ?)
-		""", (sanitize_pomar(pomar), path)
-		)
-		
-		self.db.commit()
+def update(values, pomar='/'):
+	"""Updates toc with values for dict {filename, size, hash, uuid, dirname, listversion, pomar}."""
 
-	def pathFor(self, hash, pomar='/'):
-		"""Returns the fullpath and size of a local file given a hash and pomar."""
+	database.execute("""
+	insert or ignore into toc (filename, size, hash, uuid, dirname, listversion, pomar, timestamp) 
+	values (?, ?, ?, ?, ?, ?, ?, datetime())
+	""", (values['filename'], values['size'], values['hash'], 
+		values['uuid'], values['dirname'], values['listversion'], sanitize_pomar(pomar))
+	)
 
-		pomar_path = self.pathForPomar(pomar)
+def updatePomarPath(pomar, path):
+	"""Updates toc with pomar and its pathname location on the disk."""
 
-		if pomar_path is None:
-			return None
-		
-		self.cursor.execute("""
-		select filename, dirname, size, max(listversion) from toc where uuid=? and hash=? and pomar=?
-		""", (my_uuid, hash, sanitize_pomar(pomar), )
-		)
+	database.execute("""
+	insert or ignore into locations (pomar, pathname) 
+	values (?, ?)
+	""", (sanitize_pomar(pomar), path)
+	)
+	
+def pathFor(hash, pomar='/'):
+	"""Returns the fullpath and size of a local file given a hash and pomar."""
 
-		filepath = self.cursor.fetchone()
-		if filepath is not None:
-			return (os.path.expanduser(os.path.join(pomar_path, filepath[1], filepath[0])), filepath[2])
+	pomar_path = pathForPomar(pomar)
 
+	if pomar_path is None:
 		return None
+	
+	results = database.select("""
+	select filename, dirname, size, max(listversion) from toc where uuid=? and hash=? and pomar=?
+	""", (config.my_uuid, hash, sanitize_pomar(pomar), )
+	)
 
-		
+	filepath = None
+	for res in results:
+		filepath = res
+		break
 
-	def pathForPomar(self, pomar):
-		"""Returns the pathname for a local pomar."""
+	if filepath is not None:
+		return (os.path.expanduser(os.path.join(pomar_path, filepath[1], filepath[0])), filepath[2])
 
-		self.cursor.execute("""
-		select pathname from locations where pomar=?
-		""", (sanitize_pomar(pomar), )
-		)
+	return None
 
-		val = self.cursor.fetchone()
+	
 
-		if val is not None:
-			return val[0]
+def pathForPomar(pomar):
+	"""Returns the pathname for a local pomar."""
 
-		return None
+	results = database.select("""
+	select pathname from locations where pomar=?
+	""", (sanitize_pomar(pomar), )
+	)
+
+	for res in results:
+		return res[0]
+
+	return None
 
 
 def sanitize_pomar(pomar):
@@ -233,56 +154,4 @@ def sanitize_pomar(pomar):
 
 	return pomar
 			
-
-class Resolver():
-	"""The Resolver class resolves Pomares-IDs into peer urls."""
-
-	def __init__(self, resolv_filepath=config.uuid_file):
-		if os.path.exists(resolv_filepath):
-			self.db = sqlite3.connect(resolv_filepath)
-			self.cursor = self.db.cursor()
-		else:
-			self.db = sqlite3.connect(resolv_filepath)
-			self.cursor = self.db.cursor()
-			self.cursor.execute(
-			"""
-			CREATE TABLE IF NOT EXISTS "uuid" (
-			    "id" TEXT NOT NULL PRIMARY KEY,
-			    "url" TEXT,
-			    "timestamp" DATETIME NOT NULL,
-			    "authkey" TEXT
-			)
-			"""
-			)
-			self.db.commit()
-			log.log('created uuid database: %s' % resolv_filepath)
-
-	def resolve(self, pomares_id):
-		"""Returns a url for a pomares_id, None if not found."""
-
-		self.cursor.execute("""
-		select url,timestamp from uuid where id = ?
-		""", (pomares_id,))
-
-		val = self.cursor.fetchone()
-
-		if val is not None:
-			return val[0]
-		
-		return None
-
-
-
-	def update(self, pomares_id, url):
-		"""Updates a pomares_id with its url."""
-
-		self.cursor.execute("""
-		insert or replace into uuid (id, url, timestamp) values (?, ?, datetime())
-		""", (pomares_id, url))
-
-		self.db.commit()
-
-	def __del__(self):
-		self.db.close()
-
 
