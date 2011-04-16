@@ -145,7 +145,7 @@ def to_client(handler):
 
 def request_client_LIST(handler):
 	compress = client_compressed(handler)
-	buffer = pack('LIST', toc.lastUpdates(handler.request_pomar))
+	buffer = pack('LIST', toc.lastUpdates(handler.request_pomar, all_rows=True))
 
 	if compress:
 		buffer = zlib.compress(buffer)
@@ -161,10 +161,10 @@ def request_client_PLIST(handler):
 		buffer = ''
 		if handler.pomares_id:
 			buffer = pack('PLIST', toc.listVersion(handler.pomares_id, 
-				(handler.request_args['from'], handler.request_args['to']), handler.request_pomar))
+				(handler.request_args['from'], handler.request_args['to']), handler.request_pomar, all_rows=True))
 		else:
 			buffer = pack('PLIST', toc.listVersion(config.my_uuid, 
-				(handler.request_args['from'], handler.request_args['to']), handler.request_pomar))
+				(handler.request_args['from'], handler.request_args['to']), handler.request_pomar, all_rows=True))
 
 		if compress:
 			buffer = zlib.compress(buffer)

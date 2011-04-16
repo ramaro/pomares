@@ -46,7 +46,7 @@ def lastVersionFor(pomares_id, pomar='/'):
 	return None
 
 
-def lastUpdates(pomar='/'):
+def lastUpdates(pomar='/', all_rows=False):
 	"""Returns a list of pomares-IDs and latest listversions."""
 
 	results = database.select("""
@@ -54,10 +54,13 @@ def lastUpdates(pomar='/'):
 	""", (sanitize_pomar(pomar),)
 	)
 
+	if all_rows:
+		return [row for row in results]
+
 	return results
 
 
-def listVersion(pomares_id, from_to, pomar='/'):
+def listVersion(pomares_id, from_to, pomar='/', all_rows=False):
 	"""Returns a list of files for a pomares_id between versions in from_to tuple"""
 	
 	results = database.select("""
@@ -65,6 +68,9 @@ def listVersion(pomares_id, from_to, pomar='/'):
 	where uuid=? and pomar=? and listversion between ? and ?
 	""", (pomares_id, sanitize_pomar(pomar), from_to[0], from_to[1])
 	)
+
+	if all_rows:
+		return [row for for in results]
 	
 	return results
 
