@@ -70,7 +70,7 @@ def listVersion(pomares_id, from_to, pomar='/', all_rows=False):
 	)
 
 	if all_rows:
-		return [row for for in results]
+		return [row for in results]
 	
 	return results
 
