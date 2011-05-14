@@ -91,9 +91,12 @@ class Server(threading.Thread):
 				else:
 					# On anything else
 					handler = self.handlers[fd]
-					handler.buffer = fd.recv(config.server_recv_buffer)
-					#FIXME: not catching connection resets here....
-					#error: [Errno 54] Connection reset by peer
+					try:
+						handler.buffer = fd.recv(config.server_recv_buffer)
+						#FIXME: not catching connection resets here....
+						#error: [Errno 54] Connection reset by peer
+					except socket.exception:
+						handler.buffer = ''
 
 					if handler.buffer:
 						#log.log('received: '+handler.buffer+' from: '+handler.address)

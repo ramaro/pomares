@@ -127,7 +127,7 @@ def pathFor(hash, pomar='/'):
 		filepath = res
 		break
 
-	if filepath is not None:
+	if filepath is not None and pomar_path is not None:
 		return (os.path.expanduser(os.path.join(pomar_path, filepath[1], filepath[0])), filepath[2])
 
 	return None

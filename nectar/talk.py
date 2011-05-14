@@ -184,7 +184,13 @@ def request_client_FILE(handler):
 		compress = client_compressed(handler)
 		if filename_size is not None and handler.request_args['chunk'].isdigit():
 			path, size = filename_size
-			chunk, f = file_chunk(path, size, int(handler.request_args['chunk']), compress=compress, fileobj=fileobj)
+			chunk = file_chunk(path, size, int(handler.request_args['chunk']), compress=compress, fileobj=fileobj)
+			if chunk:
+				chunk, f = chunk
+			else:
+				handler.push_status(204, 'No Content')
+				return
+
 
 			if fileobj is None:
 				newfile_for(handler.request_args['hash'], f)
