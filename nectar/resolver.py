@@ -1,14 +1,16 @@
 """The resolver module resolves Pomares-IDs into peer urls."""
 import db
 
-initialise = """
-			CREATE TABLE IF NOT EXISTS "uuid" (
-			    "id" TEXT NOT NULL PRIMARY KEY,
-			    "url" TEXT,
-			    "timestamp" DATETIME NOT NULL,
-			    "authkey" TEXT
-			)
-			"""
+initialise = []
+initialise.append("""CREATE TABLE IF NOT EXISTS "uuid" (
+	"id" TEXT NOT NULL PRIMARY KEY,
+	"url" TEXT,
+	"timestamp" DATETIME NOT NULL,
+	"authkey" TEXT
+	)
+"""
+)
+
 database = None
 
 def set_db(db_name):

@@ -3,27 +3,30 @@ It keeps track of the history and locations of all files and peers."""
 
 import config
 import os
-import log
 import db
 
-initialise ="""
-			CREATE TABLE IF NOT EXISTS "toc" (
-			    "filename" TEXT NOT NULL,
-			    "size" INTEGER NOT NULL,
-			    "hash" TEXT NOT NULL,
-			    "uuid" TEXT NOT NULL,
-			    "dirname" TEXT NOT NULL,
-			    "listversion" INTEGER NOT NULL,
-			    "pomar" TEXT NOT NULL,
-			    "timestamp" DATETIME NOT NULL,
-			    PRIMARY KEY (filename, size, hash, uuid, dirname, pomar)	
-			)
-			CREATE TABLE IF NOT EXISTS "locations" (
-			    "pomar" TEXT NOT NULL,
-			    "pathname" TEXT NOT NULL,
-			    PRIMARY KEY (pomar, pathname)
-			)
-			"""
+initialise = []
+initialise.append("""CREATE TABLE IF NOT EXISTS "toc" (
+	"filename" TEXT NOT NULL,
+	"size" INTEGER NOT NULL,
+	"hash" TEXT NOT NULL,
+	"uuid" TEXT NOT NULL,
+	"dirname" TEXT NOT NULL,
+	"listversion" INTEGER NOT NULL,
+	"pomar" TEXT NOT NULL,
+	"timestamp" DATETIME NOT NULL,
+	PRIMARY KEY (filename, size, hash, uuid, dirname, pomar)	
+)"""
+)
+
+initialise.append("""CREATE TABLE IF NOT EXISTS "locations" (
+	"pomar" TEXT NOT NULL,
+	"pathname" TEXT NOT NULL,
+	PRIMARY KEY (pomar, pathname)
+)
+"""
+)
+
 database = None
 
 def set_db(db_name):

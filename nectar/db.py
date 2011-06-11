@@ -8,6 +8,8 @@ import sqlite3
 import os
 import Queue
 
+import log
+
 databases = {}
 
 class DB(threading.Thread):
@@ -57,8 +59,9 @@ class DB(threading.Thread):
 			self.cursor = self.db.cursor()
 
 			if self.init_sql:
-				self.cursor.execute(self.init_sql)
-				log.log('created database: %s' % self.db_path)
+				for sql_block in self.init_sql:
+					self.cursor.execute(sql_block)
+					log.log('created database: %s' % self.db_path)
 
 		while True:
 			sql, args, result = self.queue.get()
