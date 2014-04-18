@@ -1,155 +1,102 @@
-"""The Database module.
-It serves a threaded sqlite3 database and tries to overtake the locking limitations on writes.
-based on http://code.activestate.com/recipes/526618/
-"""
-
-import threading
-import sqlite3
+import gdbm as dbm
 import os
-import Queue
+from time import time
 
-import log
-
-databases = {}
-
-class DB(threading.Thread):
-	"""Starts a database thread given a path for a sqlite database, an initialisation SQL and a thread name"""
-
-	def __init__(self, db_path, init_sql=None, name=None):
-		threading.Thread.__init__(self, name=name)
-		self.queue = Queue.Queue()
-		self.db_path = db_path
-		self.init_sql = init_sql
-
-		self.setDaemon(True)
-		self.start()
-
-	def execute(self, sql, args=None, result=None):
-		"""Execute sql and write into the database"""
-		if args == None:
-			self.queue.put((sql, (), result))
-		else:
-			self.queue.put((sql, args, result))
-
-	def select(self, sql, args=None):
-		"""Execute read-only sql"""
-		results = Queue.Queue()
-		self.execute(sql, args, result=results)
-
-		while True:
-			out = results.get()
-
-			if out == '!empty!':
-				break
-
-			yield out
-
-	def close(self):
-		"""Close connection to database"""
-		self.execute('!close!')
-		
-	def run(self):
-		"""Run thread"""
-
-		if os.path.exists(self.db_path):
-			self.db = sqlite3.connect(self.db_path)
-			self.cursor = self.db.cursor()
-		else:
-			self.db = sqlite3.connect(self.db_path)
-			self.cursor = self.db.cursor()
-
-			if self.init_sql:
-				for sql_block in self.init_sql:
-					self.cursor.execute(sql_block)
-					log.log('created database: %s' % self.db_path)
-
-		while True:
-			sql, args, result = self.queue.get()
-
-			if sql == '!close!':
-					break
-
-			self.cursor.execute(sql, args)
-
-			
-			if result:
-				for row in self.cursor:
-					result.put(row)
-				result.put('!empty!')
-			else:
-				self.db.commit()
-
-		self.cursor.close()
+open_dbs = {}
 
 
-def start_db(db_name, db_path, init_sql=None):
-	"""Start a database given a name, path to sqlite database and initialisation SQL"""
-	if db_name not in databases:
-		d = DB(db_path, init_sql, name=db_name)
-		databases[db_name] = d
-		return d
-	else:
-		raise DatabaseExists("Database with name '%s' already exists!" % db_name)
-	
+def get(name, path='', read_only=False, name_fmt=None):
+    "Return an open or existing db."
 
-def stop_db(db_name):
-	"""Stop a database given a name"""
-	if db_name in databases:
-		d = databases[db_name]
-		d.close()
-		del databases[db_name]
-	else:
-		raise DatabaseDoesNotExist("Database with name '%s' does not exist!" % db_name)
+    if (name_fmt is None) and (name in open_dbs):
+        return open_dbs[name]
 
-def get_db(db_name):
-	"""Return a database instance given a name"""
-	return databases[db_name]
+    elif ((name_fmt is not None) and (name_fmt in open_dbs)):
+        return open_dbs[name_fmt]
 
+    if os.path.exists(os.path.join(path, name)):
+        if read_only:
+            db = DB(name, path, mode='r')
+        else:
+            db = DB(name, path)
+        if name_fmt:
+            open_dbs[name_fmt] = db
+        else:
+            open_dbs[name] = db
 
-class DatabaseExists(Exception):
-	def __init__(self, value):
-		self.value = value
-	
-	def __str__(self):
-		return repr(self.value)
+        return db
 
-class DatabaseDoesNotExist(Exception):
-	def __init__(self, value):
-		self.value = value
-	
-	def __str__(self):
-		return repr(self.value)
+    #DB does not exist:
+    return None
 
 
-if __name__ == '__main__':
-	"""this is a test."""
+def new(name, path='', name_fmt=None):
+    "Create and return a new db."
+    if not os.path.exists(path):
+        os.mkdir(path)
+    db = DB(name, path)
+    if name_fmt:
+        open_dbs[name_fmt] = db
+    else:
+        open_dbs[name] = db
 
-	import sys
+    return db
 
-	start_db('toc', sys.argv[1])
-	start_db('resolv', sys.argv[2])
 
-	print databases
-	tocs = get_db('toc')
-	resolv = get_db('resolv')
+def delete(name):
+    "Close a db."
+    if name in open_dbs:
+        del open_dbs[name]
 
-	for row in tocs.select("""select uuid,listversion from toc where pomar=? group by uuid having max(listversion)""",
-		('/downloads/',)):
-		print row
 
-	for row in tocs.select('select * from toc'):
-		print row
+def close_old(max=5):
+    """Close oldest max number of open dbs"""
+    time_sorted = sorted(open_dbs.items(),
+                         key=lambda (i): i[1].time) # i[1] is db
 
-	for row in resolv.select("""select * from uuid"""):
-		print row
-	
-	resolv.execute("""insert or replace into uuid (id, url, timestamp) values (?, ?, datetime())""", ('test', 'http://test.com:8080'))
+    for name, db in time_sorted[:max]:
+        print '>>>>> closing', name, db.time
+        delete(name)
+        
 
-	for row in resolv.select("""select * from uuid"""):
-		print row
+class DB():
+    "The DB class."
+    def __init__(self, name, path='', mode='c'):
+        self.name = name
+        self.path = path
+        self.mode = mode
 
-	print databases
-	stop_db('toc')
-	print databases
-	stop_db('resolv')
-	print databases
+        # retry logic when too many files are open
+        # e.g.
+        # error: (24, 'Too many open files')
+        while True:
+            try:
+                self.db = dbm.open(os.path.join(self.path, self.name), self.mode)
+                self.time = time() # open time
+                break
+            except dbm.error, err:
+                if err[0] == 24:
+                    close_old()
+                else:
+                    raise
+                    break
+
+    def reload(self):
+        self.db.close()
+        self.db = dbm.open(os.path.join(self.path, self.name), self.mode)
+        self.time = time()
+
+    def __del__(self):
+        try:
+            self.db.close()
+        except AttributeError:
+            pass
+
+    def __cmp__(self, y):
+        """compare objects by time"""
+        if self.time < y.time:
+            return -1 
+        if self.time == y.time:
+            return 0 
+        if self.time > y.time:
+            return 1 

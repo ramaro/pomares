@@ -1,86 +1,137 @@
-#!/usr/bin/env python
-
-import nectar.server
-import nectar.cli
-import nectar.db
-import nectar.toc
-import nectar.resolver
-import nectar.config
-
-import getopt
+import argparse
 import sys
-import signal
+
+from nectar import server, cli, utils
 
 
-def usage():
-    print """Usage: %s [options]
-Pomares is a private file distribution system.
+def startserver():
+    server.start_server()
 
-    -h, --help          for this message
-    -c, --client        run client only
-    -s, --server        run server only
-    -d, --debug         debug to stdout
-""" % sys.argv[0]
+if __name__ == '__main__':
 
-def handler(signum, frame):
-    print 'signal', signum, 'caught.'
-    sys.exit()
+    parser = argparse.ArgumentParser(description='Pomares file distribution.')
+    subparsers = parser.add_subparsers(help='Command')
+
+    start_parser = subparsers.add_parser('start', help='Start server')
+    start_parser.add_argument('port',
+                              action='store',
+                              help='Port to listen to (default is 8080)',
+                              default=8080, type=int, nargs='?')
+
+    stop_parser = subparsers.add_parser('stop', help='Stop server')
+
+    list_parser = subparsers.add_parser('list', help='List contents')
+    list_parser.add_argument('dirname', action='store',
+                             help='Directory to list',
+                             default='/', nargs='*')
+
+    get_parser = subparsers.add_parser('get', help='Get hash')
+    get_parser.add_argument('hash', action='store', help='Hash to get')
+    get_parser.add_argument('dirname', action='store',
+                            help='Directory to save file to (default is .)',
+                            default='.', nargs='?')
+    get_parser.add_argument('--stdout', '-', default=False,
+                            action='store_true', help='Write file to stdout')
+
+    admin_parser = subparsers.add_parser('admin', help='Set Admins')
+    admin_parser.add_argument('-l', '--local', default=False,
+                              action='store_true',
+                              help='Add local key instead')
+    admin_parser.add_argument('alias', action='store', help='Alias Name')
+
+    allow_parser = subparsers.add_parser('allow', help='Allow peer')
+    allow_parser.add_argument('alias', action='store', help='Alias Name')
+    allow_parser.add_argument('tree', action='store', help='Tree Name')
+    allow_parser.add_argument('perm', action='store', help='Permissions',
+                              default='r',
+                              choices=('r', 'w', 'rw',
+                                       'none', '0'), nargs='?')
+
+    allowed_parser = subparsers.add_parser('allowed',
+                                           help='List allowed peers')
+    # tempnote:can be used to rename aliases
+    alias_parser = subparsers.add_parser('alias', help='Alias peer')
+    alias_parser.add_argument('name', action='store', help='Alias name')
+    alias_parser.add_argument('keysum', action='store', help='Key checksum')
+
+    unalias_parser = subparsers.add_parser('unalias',
+                                           help='Unalias peer')
+    unalias_parser.add_argument('name', action='store',
+                                help='Alias name')
+
+    aliases_parser = subparsers.add_parser('aliases',
+                                           help='List aliases')
+    genkeys_parser = subparsers.add_parser('genkeys',
+                                           help='Generate key pairs')
+    about_parser = subparsers.add_parser('about',
+                                         help='About this instance')
+
+    share_parser = subparsers.add_parser('share', help='Share directory')
+    share_parser.add_argument('tree', action='store', help='Tree name')
+    share_parser.add_argument('directory', action='store',
+                              help='Directory path')
+
+    # aka, connect/join tree
+    tree_parser = subparsers.add_parser('tree', help='Add remote tree')
+    tree_parser.add_argument('alias', action='store', help='Peer Alias')
+    tree_parser.add_argument('tree', action='store', help='Tree name')
 
 
-def init_signals():
-    signal.signal(signal.SIGINT, handler )
-    
+    observe_parser = subparsers.add_parser('observe', help='Observe directory')
+    observe_parser.add_argument('tree', action='store', help='Tree name')
+    observe_parser.add_argument('directory', action='store',
+                              help='Directory path')
 
 
-def main():
-    try:
-        opts, args = getopt.getopt(sys.argv[1:], "hcsd", ["help", "client", 
-        "server", "debug"])
-    
-    except getopt.GetoptError, err:
-        print str(err)
-        usage()
-        sys.exit(2)
+    shared_parser = subparsers.add_parser('shared', help='List shared trees')
 
-    client_only=True
-    server_only=True
-    debug=False
+    manage_parser = subparsers.add_parser('manage',
+                                          help='Set or show managed peer')
+    manage_parser.add_argument('alias', action='store',
+                               help='Set alias as managed peer',
+                               default=None, nargs='?')
 
-    for option, value in opts:
-        if option in ("-h", "--help"):
-            usage()
-            sys.exit()
+    seen_parser = subparsers.add_parser('peers', help='List peers')
 
-        elif option in ("-c", "--client"):
-            server_only=False
+    peer_parser = subparsers.add_parser('peer', help='Add Peer')
+    peer_parser.add_argument('alias', action='store', help='Alias')
+    peer_parser.add_argument('address', action='store',
+                             help='Address (host:port)')
+    peer_parser.add_argument('-f', '--force', default=False,
+                             action='store_true', help='Force update')
 
-        elif option in ("-s", "--server"):
-            client_only=False
+    keys_parser = subparsers.add_parser('keys',
+                                        help='List public keys for peers')
+    keys_parser.add_argument('alias', action='store',
+                             help='List keys for peers',
+                             default=None, nargs='*')
 
-        elif option in ("-d", "-v", "--debug", "--verbose"):
-            debug=True
+    key_parser = subparsers.add_parser('key', help='Add key')
+    key_parser.add_argument('alias', action='store', help='Alias')
+    key_parser.add_argument('key', action='store', help='Key')
+    key_parser.add_argument('address', action='store',
+                            default=None, nargs='?',
+                            help='Set address to key (add new peer)')
 
-    
-    init_signals()
+    pomar_parser = subparsers.add_parser('pomar', help='Set pomar')
+    # tempnote:logical name for joined peer trees
+    pomar_parser.add_argument('name', action='store', help='Pomar name')
+    # temponote:alias is set in aliases
+    pomar_parser.add_argument('alias:tree', action='store',
+                              help='Alias:tree', nargs='*')
 
-    nectar.db.start_db('toc', nectar.config.toc_file, init_sql=nectar.toc.initialise)
-    nectar.db.start_db('resolv', nectar.config.uuid_file, init_sql=nectar.resolver.initialise)
-    nectar.toc.set_db('toc')
-    nectar.resolver.set_db('resolv')
+    show_parser = subparsers.add_parser('show', help='Show pomares')
 
-    if server_only:
-        s = nectar.server.Server()
-        s.setDaemon(True)
-        s.start()
+    args = parser.parse_args()
+    #print args
+    #print sys.argv[1]
 
-    if client_only:
-        c = nectar.cli.run()
+    if sys.argv[1] == 'start':
+        startserver()
 
+    elif sys.argv[1] == 'genkeys':
+        utils.generate_keys()
 
-
-
-if __name__ == "__main__":
-    main()
-
-
-
+    else:
+        func = getattr(cli, sys.argv[1])
+        func(args)
