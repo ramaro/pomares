@@ -74,6 +74,7 @@ ChunkRequest = namedtuple('ChunkRequest',
                           ('tree', 'checksum', 'chunk_from', 'chunk_to'))
 ChunkRequestType = ChunkRequest(tree=unicode,
                                 checksum=unicode, chunk_from=int, chunk_to=int)
+ChunkRequest = namedtuple(
 
 ChunkReply = namedtuple('ChunkReply', ('data', 'seek', 'data_crc32'))
 ChunkReplyType = ChunkReply(data=unicode, seek=int, data_crc32=int)

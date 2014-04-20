@@ -8,8 +8,8 @@ from os import walk, curdir, chdir, strerror, stat
 from client import PomaresClientHandler
 from collections import namedtuple
 from gevent.queue import Queue
-from serialize import SetValuesRequest, SetValuesRequestError
-from serialize import ShareTreeFileRequest, SetPermsRequest
+from proto import SetValuesRequest, SetValuesRequestError
+from proto import ShareTreeFileRequest, SetPermsRequest
 from handler import BadHandshake
 from sys import exit
 from hashlib import sha1

@@ -6,7 +6,7 @@ from nacl.public import Box
 from utils import load_key
 from store import FileState
 from handler import Handler, BadHandshake
-from serialize import ChunkRequest, encoded_size, decode_chunk
+from proto import ChunkRequest, Ack, PubKeyReply, encoded_size
 from os.path import exists as path_exists, basename, dirname
 import struct
 
@@ -35,9 +35,10 @@ class PomaresClientHandler(Handler):
         """init_handshake only sends the client's pub_key"""
         try:
             #send my pub key
-            self.send({'pub': self.pub_key.encode()})
+            self.send(PubKeyReply(self.pub_key.encode()))
+            #self.send({'pub': self.pub_key.encode()})
             ack = self.recv()
-            if ack['ack'] != 'OK':
+            if ack.value != 'OK':
                 raise BadHandshake
         except ValueError:
             raise BadHandshake
@@ -78,33 +79,6 @@ class PomaresClientHandler(Handler):
     def request(self, req):
         print 'sending req:', req
         self.send_request(req)
-
-    #FIXME FIXME
-    def get_file(self, uri):
-        response = self.client.get(uri)
-        buff = ''
-        read_size = 1024
-
-        while True:
-            buff += response.read(read_size)
-
-            if not buff:
-                break
-
-            _real_size = encoded_size(buff)
-            #TODO real size shouldnt be more than 50% extra
-            #when compared with chunk_size
-            while len(buff) < _real_size:
-                buff += response.read(read_size)
-
-            fseek = decode_chunk(buff[:_real_size])['seek']
-            data_crc32 = decode_chunk(buff[:_real_size])['data_crc32']
-            self.f.seek(fseek)
-            self.f.write(decode_chunk(buff[:_real_size])['data'])
-            self.f_state[fseek] = data_crc32
-            buff = buff[_real_size:]
-
-        self.f.close()
 
 
 def new():

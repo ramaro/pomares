@@ -1,7 +1,7 @@
 from gevent.server import StreamServer
 from nacl.public import PublicKey, Box
 from handler import Handler, BadHandshake
-from serialize import IOReadChunkRequest
+from proto import IOReadChunkRequest, Ack
 from config import pub_key, priv_key  # allowed_keys
 from utils import load_key, pubkey_sum
 from auth import Auth, AuthDeniedError, NotAllowedError
@@ -86,14 +86,14 @@ class PomaresHandler(Handler):
 
     def do_handshake(self):
         """"reads client's key and replies with auth ack"""
-        key_dict = self.recv(my_box=True)
+        client_pubkey = self.recv(my_box=True)
 
         try:
             #==check auth here==
-            self.pub_key = PublicKey(key_dict['pub'])
+            self.pub_key = PublicKey(client_pubkey.key)
             self.auth = Auth(pubkey_sum(self.pub_key))
             self.box = Box(self.server_priv_key, self.pub_key)
-            self.send({'ack': 'OK'})
+            self.send(Ack('OK'))
         except KeyError:
             raise BadHandshake()
         except ValueError:

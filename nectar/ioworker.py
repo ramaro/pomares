@@ -5,15 +5,14 @@ and communication is done via Domain Socket"""
 import os
 import cPickle as pickle
 from struct import pack
-#from serialize import encoded_size, IOReadChunkRequest
-import serialize
+import proto
 import config
 from gevent.server import StreamServer
 from gevent import socket
 
 #fix request pickling:
 import sys
-sys.modules['nectar.serialize'] = serialize
+sys.modules['nectar.proto'] = proto
 
 from utils import gevent_sendfile as sendfile
 
@@ -87,7 +86,7 @@ class PomaresIOHandler:
         #TODO real size shouldnt be more than a % extra of msg_size
         if not buff:
             return None
-        msg_size = serialize.encoded_size(buff)
+        msg_size = proto.encoded_size(buff)
         #print 'msg_size is', msg_size
         remaining_bytes = msg_size
         buff = buff[len_size:]
@@ -170,7 +169,7 @@ class PomaresIOClient:
         #TODO real size shouldnt be more than a % extra of msg_size
         if not buff:
             return None
-        msg_size = serialize.encoded_size(buff)
+        msg_size = proto.encoded_size(buff)
         #print "received msg_size", msg_size
         remaining_bytes = msg_size
         buff = buff[len_size:]

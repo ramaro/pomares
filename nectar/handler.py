@@ -1,6 +1,7 @@
 from nacl.utils import random as new_nonce
 from struct import pack
-from serialize import encode, decode, encoded_size
+from proto import encode, decode, compress_buff, decompress_buff, encoded_size
+
 from nacl.public import Box
 
 
@@ -11,18 +12,20 @@ class Handler():
         self.address = address
         self.fd = socket.fileno()
 
-    def send(self, data, encrypt=True, wait=False):
+    def send(self, data, encrypt=True, wait=False, compress=True):
         _data = ''
         if encrypt:
             _data = self.box.encrypt(encode(data), new_nonce(Box.NONCE_SIZE))
         else:
             _data = encode(data)
         #print 'msg_size is', len(_data)
+        if compress:
+            _data = compress_buff(_data)
         if wait:
             self.socket.wait_write(self.fd)
         self.socket.send(pack('<I', len(_data))+_data)
 
-    def recv(self, decrypt=True, my_box=False, wait=False):
+    def recv(self, decrypt=True, my_box=False, wait=False, decompress=True):
         buff = ''
         len_size = 4  # 4 initial bytes for the msg length
         read_size = 1024
@@ -54,6 +57,8 @@ class Handler():
                 if remaining_bytes == 0:
                     break
 
+        if decompress:
+            buff = decompress_buff(buff)
         if decrypt:
             if my_box:
                 return decode(self.my_box.decrypt(buff))
@@ -63,8 +68,9 @@ class Handler():
             return decode(buff)
 
     def send_request(self, request, encrypt=True, wait=False):
-        req_dict = request._asdict()
-        self.send({request.__class__.__name__: req_dict}, encrypt, wait)
+        #req_dict = request._asdict()
+        #self.send({request.__class__.__name__: req_dict}, encrypt, wait)
+        self.send(request, encrypt, wait)
 
 
 class BadHandshake(Exception):
