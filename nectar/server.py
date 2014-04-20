@@ -15,7 +15,7 @@ def chunk_request(handler, req):
     print 'I am a chunk request! with args:', req
 
     #grab file params from args and send it to ioreader:
-    ioreq = IOReadChunkRequest(filename='/Users/ramaro/Downloads/Skype_6.5.0.443.dmg',
+    ioreq = IOReadChunkRequest(filename='/tmp/some.random.file',
                                offset=0, nbytes=40035719)
     #handler.send({'data': buff})
     # this should partition the request into X IOReadChunkRequest requests
