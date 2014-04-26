@@ -1,5 +1,6 @@
 import argparse
 import sys
+from docopt import docopt
 
 from nectar import server, cli, utils
 
@@ -8,6 +9,53 @@ def startserver():
     server.start_server()
 
 if __name__ == '__main__':
+    doc = """Pomares.
+
+    Usage:
+      pomares start [--port=<port>]
+      pomares stop
+      pomares list [DIRNAME [DIRNAME...]]
+      pomares get hash [--stdout] <hash> [DIRNAME]
+      pomares get admin
+      pomares set admin <alias>
+      pomares set admin (-l|--local) <key_path> [ALIAS]
+      pomares unset admin <alias>
+      pomares get managed
+      pomares set managed <alias>
+      pomares get alias [ALIAS]
+      pomares set alias <name> <keysum>
+      pomares unset alias <name>
+      pomares get key [ALIAS]
+      pomares set key <key> <alias> [ADDRESS]
+      pomares unset key <key> <alias>
+      pomares get peer [ALIAS]
+      pomares set peer <alias> <address>
+      pomares unset peer <alias>
+      pomares get shared [TREE_NAME]
+      pomares set shared <tree_name> <dir>
+      pomares unset shared <tree_name> [DIR]
+      pomares get tree [TREE_NAME]
+      pomares set tree <alias> <tree_name>
+      pomares get perms <alias> 
+      pomares set perms <alias> <tree_name> (r|w|rw|none)
+      pomares get pomar [NAME] 
+      pomares set pomar <name> <alias:tree>...
+      pomares genkeys [--force]
+      pomares about
+
+    Options:
+      -h --help     Show this screen.
+      --version     Show version.
+
+    """ 
+
+    opts = docopt(doc)
+    print opts
+    print filter(lambda k: opts[k],  opts.keys())
+    print filter(lambda v: v,  opts.values())
+
+    sys.exit(1)
+
 
     parser = argparse.ArgumentParser(description='Pomares file distribution.')
     subparsers = parser.add_subparsers(help='Command')
