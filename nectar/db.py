@@ -1,4 +1,4 @@
-import gdbm as dbm
+import dbm
 import os
 from time import time
 
@@ -52,10 +52,10 @@ def delete(name):
 def close_old(max=5):
     """Close oldest max number of open dbs"""
     time_sorted = sorted(open_dbs.items(),
-                         key=lambda (i): i[1].time) # i[1] is db
+                         key=lambda i: i[1].time) # i[1] is db
 
     for name, db in time_sorted[:max]:
-        print '>>>>> closing', name, db.time
+        print('>>>>> closing', name, db.time)
         delete(name)
         
 
@@ -74,7 +74,7 @@ class DB():
                 self.db = dbm.open(os.path.join(self.path, self.name), self.mode)
                 self.time = time() # open time
                 break
-            except dbm.error, err:
+            except dbm.error as err:
                 if err[0] == 24:
                     close_old()
                 else:

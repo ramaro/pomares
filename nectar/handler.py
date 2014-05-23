@@ -1,17 +1,29 @@
+import asyncio
+
+
 from nacl.utils import random as new_nonce
-from struct import pack
-from proto import encode, decode, compress_buff, decompress_buff, encoded_size
+from struct import unpack, pack
+#from proto import encode, decode, compress_buff, decompress_buff, encoded_size
 
 from nacl.public import Box
+import sys
 
 
-class Handler():
-    def __init__(self, socket, address):
-        #print 'New connection from %s:%s' % address
-        self.socket = socket
-        self.address = address
-        self.fd = socket.fileno()
 
+if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    if sys.argv[1] == 'server':
+        coro = loop.create_server(PomaresProtocol, '127.0.0.1', 8888)
+        server = loop.run_until_complete(coro)
+        print('serving on {}'.format(server.sockets[0].getsockname()))
+        loop.run_forever()
+    elif sys.argv[1] == 'client':
+        payload = sys.argv[2]
+        print('payload size: {}'.format(4+len(payload)))
+        server_prot = PomaresProtocol(payload)
+        loop.run_until_complete(loop.create_connection(lambda: server_prot, host='127.0.0.1', port=8888))
+
+    """
     def send(self, data, encrypt=True, wait=False, compress=True):
         _data = ''
         if encrypt:
@@ -71,7 +83,6 @@ class Handler():
         #req_dict = request._asdict()
         #self.send({request.__class__.__name__: req_dict}, encrypt, wait)
         self.send(request, encrypt, wait)
+    """
 
 
-class BadHandshake(Exception):
-    pass

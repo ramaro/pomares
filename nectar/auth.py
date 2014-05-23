@@ -1,6 +1,6 @@
 """the auth and rules module."""
 
-from store import SumCapabilities
+from nectar.store import SumCapabilities
 
 
 class Auth():

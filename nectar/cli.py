@@ -1,16 +1,15 @@
 """cli code"""
-from store import SumAlias, SumManaged, SumCapabilities, SumPeers, SumKey
-from utils import pubkey_sum, pubkey_encode, pubkey_from_b64, pubkey_from_key
-from config import pub_key, priv_key, config_dir
-from utils import load_key
+from nectar.store import SumAlias, SumManaged, SumCapabilities, SumPeers, SumKey
+from nectar.utils import pubkey_sum, pubkey_encode, pubkey_from_b64, pubkey_from_key
+from nectar.config import pub_key, priv_key, config_dir
+from nectar.utils import load_key
 from os.path import join as pathjoin
-from os import walk, curdir, chdir, strerror, stat
-from client import PomaresClientHandler
+from os import walk, curdir, chdir, stat
+from nectar.client import PomaresClientHandler
 from collections import namedtuple
 from gevent.queue import Queue
-from proto import SetValuesRequest, SetValuesRequestError
-from proto import ShareTreeFileRequest, SetPermsRequest
-from handler import BadHandshake
+from nectar.proto import SetValuesRequest, SetValuesRequestError
+from nectar.proto import ShareTreeFileRequest, SetPermsRequest, BadHandshake
 from sys import exit
 from hashlib import sha1
 import re
@@ -20,7 +19,7 @@ def alias(args):
     #TODO add -f to force when it already exists (project wide!)
     aliases = SumAlias()
     aliases[args.keysum] = args.name
-    print '*', args.name
+    print('*', args.name)
 
 
 def alias_sum(alias):
@@ -43,7 +42,7 @@ def unalias(args):
 def aliases(args):
     aliases = SumAlias()
     for k in aliases:
-        print "%s\t%s" % (aliases[k], k)
+        print("%s\t%s" % (aliases[k], k))
 
 
 def peers(args):
@@ -51,16 +50,16 @@ def peers(args):
     aliases = SumAlias()
     for k in _peers:
         if aliases[k]:
-            print "%s\t%s" % (aliases[k], _peers[k])
+            print("%s\t%s" % (aliases[k], _peers[k]))
         else:
-            print "%s\t%s" % (k, _peers[k])
+            print("%s\t%s" % (k, _peers[k]))
 
 
 def about(args):
 
-    print '[public key]', pubkey_encode(load_key(pub_key, 'pub'))
-    print '[public sum]', pubkey_sum(load_key(pub_key, 'pub'))
-    print
+    print('[public key]', pubkey_encode(load_key(pub_key, 'pub')))
+    print('[public sum]', pubkey_sum(load_key(pub_key, 'pub')))
+    print()
 
 
 def walkdir(dir):
@@ -100,7 +99,7 @@ def share_dir(dirname, treename):
                 fullpath = pathjoin(subdir, f)
                 try:
                     _hash = hashfile(fullpath)
-                    print fullpath, _hash
+                    print(fullpath, _hash)
 
                     _s = stat(fullpath)
                     hb = {'stat': {'ctime': _s.st_ctime,
@@ -116,9 +115,8 @@ def share_dir(dirname, treename):
 
                     yield (treename, {f: hb})
 
-                except IOError, err:
-                    print '%s: %s, skipping...' % (fullpath,
-                                                   strerror(err.errno))
+                except IOError as err:
+                    print('%s: %s, skipping...' % (fullpath,err.args))
                     pass
     finally:
         chdir(pwd)
@@ -140,12 +138,12 @@ def keys(args):
     for k in sumkeys:
         if args.alias:
             if aliases[k] in args.alias:
-                print "%s %s [%s]" % (aliases[k],
+                print("%s %s [%s]" % (aliases[k],),
                                       pubkey_sum(sumkeys[k],
                                                  from_key=True),
                                       pubkey_encode(sumkeys[k], from_key=True))
         else:
-            print "%s %s [%s]" % (aliases[k],
+            print("%s %s [%s]" % (aliases[k],),
                                   pubkey_sum(sumkeys[k], from_key=True),
                                   pubkey_encode(sumkeys[k], from_key=True))
 
@@ -159,7 +157,7 @@ def key(args):
     managed = managed_session()
 
     if not managed:
-        print 'no managed peer set.'
+        print('no managed peer set.')
         exit(1)
 
     managed_peer = sumpeers[managed]
@@ -171,7 +169,7 @@ def key(args):
             managed_peer = args.address
             sumpeers[managed] = managed_peer
         else:
-            print 'no managed peer address set/found.'
+            print('no managed peer address set/found.')
             exit(1)
 
     #we've got a managed peer here
@@ -198,10 +196,10 @@ def key(args):
             sumkeys = SumKey()
             sumkeys[alias_args.keysum] = pubkey.encode()
         except BadHandshake:
-            print 'got a bad handshake, aborting.'
+            print('got a bad handshake, aborting.')
             exit(1)
         except SetValuesRequestError:
-            print 'couldn\'t set values, aborting.'
+            print('couldn\'t set values, aborting.')
             exit(1)
 
 
@@ -230,10 +228,10 @@ def do_managed(request_type, task_list):
                              task_queue)
 
     except BadHandshake:
-        print 'got a bad handshake, aborting.'
+        print('got a bad handshake, aborting.')
         exit(1)
     except SetValuesRequestError:
-        print 'couldn\'t set values, aborting.'
+        print('couldn\'t set values, aborting.')
         exit(1)
 
 
@@ -249,7 +247,7 @@ def peer(args):
                 sumpeers[k] = args.address
                 break
             else:
-                print 'peer for %s already set. (use the --force)' % args.alias
+                print('peer for %s already set. (use the --force)' % args.alias)
                 exit(1)
 
 
@@ -266,18 +264,18 @@ def manage(args):
             if args.alias == sumaliases[k]:
                 summanaged[k] = 'manage'
                 open(pathjoin(config_dir, '.managed_session'), 'w').write(k)
-                print '*', args.alias
+                print('*', args.alias)
                 break
     else:
         current_session = managed_session()
         if not current_session:
-            print 'No current session set'
+            print('No current session set')
             exit(1)
 
         for k in summanaged:
             if k == current_session:
-                print '*',
-            print sumaliases[k]
+                print('*',)
+            print(sumaliases[k])
 
 
 def managed_session():
@@ -318,7 +316,7 @@ def admin(args):
             #and send a SetValues/Admin with new admin key
             keysum = alias_sum(args.alias)
             if not keysum:
-                print 'alias %s not found.' % args.alias
+                print('alias %s not found.' % args.alias)
                 exit(1)
 
             sv = SetValuesRequest(db='SumCapabilities',
@@ -331,21 +329,21 @@ def admin(args):
                 sumkey = SumKey()
                 server_pubkey = sumkey[current_session]
                 if server_pubkey is None:
-                    print 'alias key not found.'
+                    print('alias key not found.')
                     exit(1)
                 server_pubkey = pubkey_from_key(server_pubkey)
                 if not server_pubkey:
-                    print 'can\'t find managed session key.'
+                    print('can\'t find managed session key.')
                     exit(1)
                 PomaresClientHandler((host, port),
                                      pub_key, priv_key,
                                      server_pubkey, task_queue)
 
             except BadHandshake:
-                print 'got a bad handshake, aborting.'
+                print('got a bad handshake, aborting.')
                 exit(1)
             except SetValuesRequestError:
-                print 'couldn\'t set values, aborting.'
+                print('couldn\'t set values, aborting.')
                 exit(1)
 
 
@@ -358,10 +356,10 @@ def allow(args):
             task = (args.tree, keysum, args.perm)
             do_managed(SetPermsRequest, [task])
         else:
-            print 'alias %s not found.' % args.alias
+            print('alias %s not found.' % args.alias)
             exit(1)
     else:
-        print 'wrong perms.'
+        print('wrong perms.')
         exit(1)
 
 

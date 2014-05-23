@@ -3,24 +3,24 @@ Writer and Reader processes are spawned
 and communication is done via Domain Socket"""
 
 import os
-import cPickle as pickle
+import pickle
 from struct import pack
-import proto
-import config
-from gevent.server import StreamServer
-from gevent import socket
+import nectar.proto as proto
+import nectar.config as config
+#from gevent.server import StreamServer
+#from gevent import socket
 
 #fix request pickling:
 import sys
 sys.modules['nectar.proto'] = proto
 
-from utils import gevent_sendfile as sendfile
+#from utils import gevent_sendfile as sendfile
 
 open_files = {}
 
 
 def ioreadchunk_request(handler, req):
-    print 'ioreadchunk_request', req
+    print('ioreadchunk_request', req)
 
     f = open(req.filename, 'rb')
     offset = req.offset
@@ -32,7 +32,7 @@ def ioreadchunk_request(handler, req):
     while total_sent < nbytes:
         try:
             offset, sent = sendfile(handler.fd, f.fileno(), offset, nbytes)
-            print 'sent', sent
+            print('sent', sent)
             if sent == 0:
                 break  # EOF
             total_sent += sent
@@ -114,21 +114,21 @@ class PomaresIOHandler:
             func = ROUTES[req_key]
             func(self, request)
         except KeyError:
-            print 'ignoring request [bad key]'
+            print('ignoring request [bad key]')
         except AttributeError:
-            print 'ignoring request [no key]'
+            print('ignoring request [no key]')
         except IndexError:
-            print 'ignoring request [no key]'
+            print('ignoring request [no key]')
 
     def loop(self):
         while True:
             req = self.recv()
 
             if not req:
-                print 'iobreaking'
+                print('iobreaking')
                 break
 
-            print 'got ioreq:', req
+            print('got ioreq:', req)
             self.route(req)
 
 
@@ -191,5 +191,5 @@ class PomaresIOClient:
 
 
 if __name__ == '__main__':
-    print 'starting io_worker as reader...'
+    print('starting io_worker as reader...')
     io_worker('reader')

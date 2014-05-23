@@ -19,7 +19,7 @@ class PomaresClientHandler(Handler):
     def __init__(self, address, pub_key, priv_key, host_pub_key, task_queue,
                  init_only=False):
         self.socket = create_connection(address)
-        print 'init', self.socket
+        print('init', self.socket)
         Handler.__init__(self, self.socket, address)
         self.pub_key = load_key(pub_key, 'pub')
         self.priv_key = load_key(priv_key, 'priv')
@@ -51,11 +51,11 @@ class PomaresClientHandler(Handler):
         while True:
             if self.task_queue.empty():
                 #TEMP TEMP TEMP
-                print 'empty queue, quitting'
+                print('empty queue, quitting')
                 break
-            print 'waiting'
+            print('waiting')
             task = self.task_queue.get()
-            print 'got task', task
+            print('got task', task)
             #func, params = task
             #func = getattr(self, func)
             #func(*params)
@@ -71,13 +71,13 @@ class PomaresClientHandler(Handler):
             quit(1)
 
     def request_chunk(self, tree, checksum, chunk_from, chunk_to):
-        print 'chunk_request'
+        print('chunk_request')
         req = ChunkRequest(tree, checksum, chunk_from, chunk_to)
         self.send_request(req)
-        print 'send:', req
+        print('send:', req)
 
     def request(self, req):
-        print 'sending req:', req
+        print('sending req:', req)
         self.send_request(req)
 
 
@@ -106,6 +106,6 @@ if __name__ == '__main__':
     #TODO prepare new file handles and pass it to the client greenlets
 
     clients = [Greenlet.spawn(lambda: new()) for g in xrange(0, 5)]
-    print 'test'
+    print('test')
     for c in clients:
         c.join()

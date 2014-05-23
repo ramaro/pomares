@@ -1,11 +1,11 @@
 """the metadata store module"""
 
-import db
-from config import db_path, db_path_local, db_path_shared_trees
-from config import db_path_shared_basenames, db_path_remote
-import cPickle as pickle
+import nectar.db as db
+from nectar.config import db_path, db_path_local, db_path_shared_trees
+from nectar.config import db_path_shared_basenames, db_path_remote
+from nectar.utils import path_valid, PathNotValidException
+import pickle
 from os.path import join as pathjoin
-from utils import path_valid, PathNotValidException
 
 
 class Store():

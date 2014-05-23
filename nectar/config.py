@@ -1,4 +1,4 @@
-import ConfigParser
+from configparser import ConfigParser
 import os
 import sys
 import errno
@@ -6,7 +6,7 @@ import errno
 config_file = os.path.expanduser('~/.pomares/pomares.cfg')
 config_dir = os.path.dirname(config_file)
 
-cp = ConfigParser.ConfigParser()
+cp = ConfigParser()
 
 
 def create_dir(path):
@@ -43,8 +43,9 @@ connect_timeout = 30
 """     % {'config_dir': config_dir})
         conf.close()
     except:
-        print "Unable to setup initial configuration file %s" % \
-            os.path.expanduser(config_file)
+        print("Unable to setup initial configuration file %s" % \
+              os.path.expanduser(config_file),
+              file=sys.stderr) 
         sys.exit(1)
 
 

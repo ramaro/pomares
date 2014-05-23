@@ -6,7 +6,7 @@ from Crypto.Cipher import PKCS1_OAEP
 from Crypto import Random
 from os import chmod
 
-def generate_keys(pub_path, priv_path, mode=0400, length=1024):
+def generate_keys(pub_path, priv_path, mode=0o400, length=1024):
     """generate keys in pub_path, priv_path with length"""
     o = RSA.generate(length)
     pub = o.publickey().exportKey()
