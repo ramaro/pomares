@@ -131,6 +131,42 @@ class TreeHashes(Store):
                        path=pathjoin(db_path_shared_trees, name),
                        name_fmt='trees/%s/basenames' % (name,))
 
+
+
+import random
+import uuid
+import time
+
+def timeit(f):
+    def timed(*args, **kw):
+
+        ts = time.time()
+        result = f(*args, **kw)
+        te = time.time()
+
+        print('func:%r args:[%r, %r] took: %2.4f sec' % \
+          (f.__name__, args, kw, te-ts))
+        return result
+
+    return timed
+
+def test_writes():
+    name = 'test_db{}'.format(random.random()*1000)
+    print('writing to', name)
+    d = Store(name)
+    for i in range(1000000):
+        u = uuid.uuid4()
+        d[i] = u.bytes
+
+def test_reads(name):
+    print('reading', name)
+    d = Store(name)
+    for i in range(1000000):
+        u = uuid.uuid4()
+        d[i] 
+    
+
+
 if __name__ == '__main__':
     """simple tool to display key-value pairs in Store files"""
     import sys

@@ -3,6 +3,7 @@ from collections import namedtuple
 from zlib import compress, decompress
 from struct import pack, unpack
 import asyncio
+import logging
 
 ChunkRequest = namedtuple('ChunkRequest', ('tree', 'checksum', 'chunk_from', 'chunk_to'))
 ChunkReply = namedtuple('ChunkReply', ('data', 'seek', 'data_crc32'))
@@ -38,7 +39,7 @@ class PomaresHandler():
     def send_data(self, payload):
         payload_size = len(payload)
         payload = pack('<I{:d}s'.format(payload_size), payload_size, payload)
-        print('sending payload: {}'.format(payload))
+        logging.debug('sending payload ({} bytes): {}'.format(payload_size, payload))
         self.transport.write(payload)
 
 
@@ -54,14 +55,14 @@ class PomaresProtocol(asyncio.Protocol):
         self.data_buffer_size = 0
         self.msg_size = 0
 
-        print('connection made')
+        logging.debug('connection made')
         if self.payload:
             self.handler.send_data(self.payload)
             self.payload = None
 
 
     def data_received(self, data):
-        print('received data: {}'.format(data))
+        logging.debug('received data: {}'.format(data))
 
         # connection is made
         self.data_buffer.extend(data)
@@ -69,23 +70,25 @@ class PomaresProtocol(asyncio.Protocol):
 
         if (not self.msg_size) and (self.data_buffer_size >= self.header_size):
             self.msg_size = self.encoded_size(self.data_buffer)
+            logging.debug('set msg_size to {}'.format(self.msg_size))
 
-        print('data_buffer_size: {}'.format(self.data_buffer_size))
-        print('msg_size: {}'.format(self.msg_size))
+        logging.debug('data_buffer_size: {}'.format(self.data_buffer_size))
+        logging.debug('msg_size: {}'.format(self.msg_size))
 
         if (self.data_buffer_size - self.header_size) >= self.msg_size:
             # got a complete msg, do stuff with it:
+            logging.debug('got a complete msg, call route')
             self.route(self.handler, data[self.header_size:])
             
             # reset for next msg
-            print('## RESET ##')
+            logging.debug('## RESET ##')
             self.msg_size = 0
             self.data_buffer = bytearray(data[self.data_buffer_size:])
             self.data_buffer_size = len(self.data_buffer)
 
 
     def connection_lost(self, exc):
-        print('lost connection')
+        logging.debug('lost connection')
 
 
     def encoded_size(self, data):
@@ -93,7 +96,7 @@ class PomaresProtocol(asyncio.Protocol):
         return unpack('<I', data[:self.header_size])[0]
 
     def route(self, handler, msg):
-        print('got message: {}'.format(msg))
+        logging.debug('got message: {}'.format(msg))
 
 
 

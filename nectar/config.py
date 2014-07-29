@@ -35,8 +35,7 @@ db_path_shared_basenames: %(config_dir)s/db/remote/shared/basenames
 db_path_shared_trees: %(config_dir)s/db/remote/shared/trees
 sock_path: %(config_dir)s/sock
 
-pub_key: %(config_dir)s/keys/pub.key
-priv_key: %(config_dir)s/keys/priv.key
+key_path: %(config_dir)s/keys
 
 request_timeout = 60
 connect_timeout = 30
@@ -64,8 +63,7 @@ db_path_shared_basenames = os.path.expanduser(cp.get('Main',
 db_path_shared_trees = os.path.expanduser(cp.get('Main',
                                                  'db_path_shared_trees'))
 sock_path = os.path.expanduser(cp.get('Main', 'sock_path'))
-pub_key = os.path.expanduser(cp.get('Main', 'pub_key'))
-priv_key = os.path.expanduser(cp.get('Main', 'priv_key'))
+key_path = os.path.expanduser(cp.get('Main', 'key_path'))
 
 create_dir(db_path)
 create_dir(db_path_local)
@@ -74,4 +72,4 @@ create_dir(db_path_remote_shared)
 create_dir(db_path_shared_trees)
 create_dir(db_path_shared_basenames)
 create_dir(sock_path)
-create_dir(config_dir+'/keys')
+create_dir(key_path)
