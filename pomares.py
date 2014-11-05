@@ -1,7 +1,8 @@
+#!/usr/bin/env python
 import argparse
 import sys
 
-from nectar import server, cli, utils
+from nectar import server, cli, utils, config, crypto
 
 
 def startserver():
@@ -126,12 +127,5 @@ if __name__ == '__main__':
     #print args
     #print sys.argv[1]
 
-    if sys.argv[1] == 'start':
-        startserver()
-
-    elif sys.argv[1] == 'genkeys':
-        utils.generate_keys()
-
-    else:
-        func = getattr(cli, sys.argv[1])
-        func(args)
+    func = getattr(cli, sys.argv[1])
+    func(args)

@@ -1,19 +1,17 @@
 """cli code"""
 from nectar.store import SumAlias, SumManaged, SumCapabilities, SumPeers, SumKey
-from nectar.utils import pubkey_sum, pubkey_encode, pubkey_from_b64, pubkey_from_key
-from nectar.config import pub_key, priv_key, config_dir
-from nectar.utils import load_key
-from os.path import join as pathjoin
-from os import walk, curdir, chdir, stat
-from nectar.client import PomaresClientHandler
-from collections import namedtuple
-from gevent.queue import Queue
-from nectar.proto import SetValuesRequest, SetValuesRequestError
-from nectar.proto import ShareTreeFileRequest, SetPermsRequest, BadHandshake
-from sys import exit
-from hashlib import sha1
+from nectar import server
+from nectar import crypto
+from nectar import config
 import re
 
+def start(args):
+    """starts server"""
+    server.start_server()
+
+def genkeys(args):
+    """generates keys"""
+    crypto.generate_keys(config.key_file)
 
 def alias(args):
     #TODO add -f to force when it already exists (project wide!)
@@ -21,14 +19,12 @@ def alias(args):
     aliases[args.keysum] = args.name
     print('*', args.name)
 
-
 def alias_sum(alias):
     """returns key sum of alias"""
     aliases = SumAlias()
     for k in aliases:
         if alias == aliases[k]:
             return k
-
 
 def unalias(args):
     aliases = SumAlias()
@@ -38,12 +34,10 @@ def unalias(args):
             del aliases[keysum]
             break
 
-
 def aliases(args):
     aliases = SumAlias()
     for k in aliases:
         print("%s\t%s" % (aliases[k], k))
-
 
 def peers(args):
     _peers = SumPeers()
@@ -57,8 +51,9 @@ def peers(args):
 
 def about(args):
 
-    print('[public key]', pubkey_encode(load_key(pub_key, 'pub')))
-    print('[public sum]', pubkey_sum(load_key(pub_key, 'pub')))
+    keyobj = crypto.load_key(config.key_file)
+    print('[public key]', crypto.pubkey_base64(keyobj))
+    print('[public sum]', crypto.pubkey_sum(keyobj))
     print()
 
 
@@ -236,7 +231,10 @@ def do_managed(request_type, task_list):
 
 
 def peer(args):
-    """add peers [local]"""
+    """
+    add peers [local]
+    needs an alias to exist first.
+    """
 
     aliases = SumAlias()
     sumpeers = SumPeers()

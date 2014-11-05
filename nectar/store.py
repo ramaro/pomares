@@ -172,12 +172,12 @@ if __name__ == '__main__':
     import sys
     import os
     import pprint
-    import cPickle
+    import pickle
     name = os.path.basename(sys.argv[1])
     dirname = os.path.dirname(sys.argv[1])
     s = db.get(name=name, path=dirname, read_only=True)
 
     k = s.db.firstkey()
     while k is not None:
-        pprint.pprint(dict([(cPickle.loads(k), cPickle.loads(s.db[k]))]))
+        pprint.pprint(dict([(pickle.loads(k), pickle.loads(s.db[k]))]))
         k = s.db.nextkey(k)

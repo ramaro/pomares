@@ -1,4 +1,4 @@
-from crypto import CryptoBox, SecretBox, PublicKey, SecretKey, load_key, pubkey_sum, generate_keys
+from nectar.crypto import CryptoBox, SecretBox, PublicKey, SecretKey, load_key, pubkey_sum, generate_keys
 from nectar.proto import IOReadChunkRequest, Ack, PomaresProtocol, BadHandshake, PomaresHandler, PubKeyReply
 from nectar.proto import decompress_buff, compress_buff, encode, decode
 from nectar.config import key_path # allowed_keys
