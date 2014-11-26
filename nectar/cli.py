@@ -1,33 +1,46 @@
 """cli code"""
-from nectar.store import SumAlias, SumManaged, SumCapabilities, SumPeers, SumKey
+from nectar import store
 from nectar import server
 from nectar import crypto
 from nectar import config
+from collections import namedtuple
+import os.path
+from os import listdir
 import re
 
-def start(args):
+def run(args):
     """starts server"""
-    server.start_server()
+    server.start_server(args.keyfile, args.address, args.port)
 
 def genkeys(args):
-    """generates keys"""
-    crypto.generate_keys(config.key_file)
+    """generates key files"""
+    if not args.keyfile:
+        crypto.generate_keys(config.key_file)
+    else:
+        crypto.generate_keys(os.path.join(config.key_path,args.keyfile))
+
+def keypairs(args):
+    """Lists keypair files in keypath"""
+    for f in listdir(config.key_path):
+        print('- {}'.format(f))
+
 
 def alias(args):
     #TODO add -f to force when it already exists (project wide!)
-    aliases = SumAlias()
+    aliases = store.SumAlias()
     aliases[args.keysum] = args.name
     print('*', args.name)
 
 def alias_sum(alias):
     """returns key sum of alias"""
-    aliases = SumAlias()
+    aliases = store.SumAlias()
     for k in aliases:
         if alias == aliases[k]:
             return k
 
 def unalias(args):
-    aliases = SumAlias()
+    """delete alias"""
+    aliases = store.SumAlias()
     for keysum in aliases:
         #delete only first occurrence
         if args.name == aliases[keysum]:
@@ -35,13 +48,15 @@ def unalias(args):
             break
 
 def aliases(args):
-    aliases = SumAlias()
+    """print aliases"""
+    aliases = store.SumAlias()
     for k in aliases:
         print("%s\t%s" % (aliases[k], k))
 
 def peers(args):
-    _peers = SumPeers()
-    aliases = SumAlias()
+    """print peers"""
+    _peers = store.SumPeers()
+    aliases = store.SumAlias()
     for k in _peers:
         if aliases[k]:
             print("%s\t%s" % (aliases[k], _peers[k]))
@@ -52,8 +67,8 @@ def peers(args):
 def about(args):
 
     keyobj = crypto.load_key(config.key_file)
-    print('[public key]', crypto.pubkey_base64(keyobj))
-    print('[public sum]', crypto.pubkey_sum(keyobj))
+    print('- public_key', crypto.pubkey_base64(keyobj))
+    print('- public_sum', crypto.pubkey_sum(keyobj))
     print()
 
 
@@ -127,9 +142,9 @@ def share(args):
     do_managed(ShareTreeFileRequest, task_list)
 
 
-def keys(args):
-    sumkeys = SumKey()
-    aliases = SumAlias()
+def pubkeys(args):
+    sumkeys = store.SumKey()
+    aliases = store.SumAlias()
     for k in sumkeys:
         if args.alias:
             if aliases[k] in args.alias:
@@ -143,12 +158,12 @@ def keys(args):
                                   pubkey_encode(sumkeys[k], from_key=True))
 
 
-def key(args):
+def pubkey(args):
     """key is in base64 [remote/local]"""
 
-    pubkey = pubkey_from_b64(args.key)
+    pubkey = crypto.pubkey_from_base64(args.pubkey)
     #args.address ##optional##
-    sumpeers = SumPeers()
+    sumpeers = store.SumPeers()
     managed = managed_session()
 
     if not managed:
@@ -172,7 +187,7 @@ def key(args):
         #put a SetValuesRequest[remote] in the client's task_queue
         #for the new key with empty capabilities
         #on succcess reply, update aliases [local]
-        sv = SetValuesRequest(db='SumCapabilities',
+        sv = SetValuesRequest(db='store.SumCapabilities',
                               values={'key': pubkey_sum(pubkey), 'value': ''})
         host, port = managed_peer.split(':')
         task_queue = Queue()
@@ -188,7 +203,7 @@ def key(args):
             alias_args.name = args.alias
             alias(alias_args)
             #save key:
-            sumkeys = SumKey()
+            sumkeys = store.SumKey()
             sumkeys[alias_args.keysum] = pubkey.encode()
         except BadHandshake:
             print('got a bad handshake, aborting.')
@@ -202,8 +217,8 @@ def do_managed(request_type, task_list):
     """send a task_list of values on in currently managed peer
        task_list is a list of parameters for request_type"""
 
-    sumpeers = SumPeers()
-    sumkeys = SumKey()
+    sumpeers = store.SumPeers()
+    sumkeys = store.SumKey()
     managed = managed_session()
     managed_peer = sumpeers[managed]
 
@@ -236,8 +251,8 @@ def peer(args):
     needs an alias to exist first.
     """
 
-    aliases = SumAlias()
-    sumpeers = SumPeers()
+    aliases = store.SumAlias()
+    sumpeers = store.SumPeers()
 
     for k in aliases:
         if aliases[k] == args.alias:
@@ -253,15 +268,16 @@ def manage(args):
     """
     Set or show managed peers [local]
     """
-    summanaged = SumManaged()
-    sumaliases = SumAlias()
+    summanaged = store.SumManaged()
+    sumaliases = store.SumAlias()
 
     if args.alias:
         #lookup alias:
         for k in sumaliases:
             if args.alias == sumaliases[k]:
                 summanaged[k] = 'manage'
-                open(pathjoin(config_dir, '.managed_session'), 'w').write(k)
+                open(pathjoin(config.config_dir, 
+                              '.managed_session'), 'w').write(k)
                 print('*', args.alias)
                 break
     else:
@@ -279,7 +295,8 @@ def manage(args):
 def managed_session():
     """Returns currently managed session [local]"""
     try:
-        current_session = open(pathjoin(config_dir, '.managed_session')).read()
+        current_session = open(pathjoin(config.config_dir, 
+                               '.managed_session')).read()
         return current_session
     except IOError:
         return None
@@ -289,7 +306,7 @@ def managed_peer():
     """Returns currently managed session peer [local]"""
     current_session = managed_session()
     if current_session:
-        return SumPeers()[current_session]
+        return store.SumPeers()[current_session]
 
 
 def admin(args):
@@ -297,12 +314,12 @@ def admin(args):
 
     if args.local:
         #alias is the key location in disk instead [local]:
-        local_key = load_key(args.alias, 'pub')
+        local_key = crypto.load_key(args.alias)
         alias_args = namedtuple('newargs', ('keysum', 'name'))
-        alias_args.keysum = pubkey_sum(local_key)
+        alias_args.keysum = crypto.pubkey_sum(local_key)
         alias_args.name = 'local'
         alias(alias_args)
-        sumcapabilities = SumCapabilities()
+        sumcapabilities = store.SumCapabilities()
         sumcapabilities[alias_args.keysum] = 'admin'
         #TODO get the database to RELOAD here
         #as it can be open by the server process
@@ -317,14 +334,14 @@ def admin(args):
                 print('alias %s not found.' % args.alias)
                 exit(1)
 
-            sv = SetValuesRequest(db='SumCapabilities',
+            sv = SetValuesRequest(db='store.SumCapabilities',
                                   values={'key': keysum, 'value': 'admin'})
             host, port = managed_peer().split(':')
             task_queue = Queue()
             task_queue.put(sv)
             try:
                 #[remote]
-                sumkey = SumKey()
+                sumkey = store.SumKey()
                 server_pubkey = sumkey[current_session]
                 if server_pubkey is None:
                     print('alias key not found.')

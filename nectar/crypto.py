@@ -3,7 +3,7 @@ from libnacl.public import SecretKey, Box, PublicKey
 from libnacl.secret import SecretBox
 from libnacl.utils import load_key as j_loadkey
 from hashlib import sha256
-from base64 import b64encode
+import base64 
 
 class CryptoBox():
     def __init__(self, keyobj):
@@ -34,7 +34,13 @@ def pubkey_base64(keyobj):
     """returns the public key in keyobj
     as a base64 string"""
 
-    return b64encode(keyobj.pk).decode() # bytes to utf-8
+    return base64.b64encode(keyobj.pk).decode() # bytes to utf-8
+
+def pubkey_from_base64(pkb64):
+    """returns the public key from
+    base64 encoded pkb64"""
+
+    return base64.b64decode(pkb64)
 
 def pubkey_sum(keyobj):
     """returns a sha256 keysum for public key in keyobj"""

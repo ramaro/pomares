@@ -6,6 +6,7 @@ from nectar.config import key_path # allowed_keys
 from nectar.ioworker import io_reader
 from nectar.store import HashBasenames, TreeHashes, SumAllow
 from pprint import pprint
+from os.path import join as pathjoin
 import logging
 import sys
 import copy
@@ -80,9 +81,8 @@ class PomaresServer:
         self.loop.run_forever()
 
 
-def start_server():
-    #generate_keys(key_path)
-    server = PomaresServer(key_path+'/my.key')
+def start_server(keyfile, address, port):
+    server = PomaresServer(pathjoin(key_path, keyfile), address, port)
     server.run()
 
 
@@ -97,6 +97,8 @@ if __name__ == '__main__':
         payload = compress_buff(payload)
         print('payload size: {}'.format(4+len(payload)))
         server_prot = PomaresProtocol(payload)
-        loop.run_until_complete(loop.create_connection(lambda: server_prot, host='127.0.0.1', port=8080))
+        loop.run_until_complete(loop.create_connection(lambda: server_prot,
+                                                       host='127.0.0.1',
+                                                       port=8080))
         loop.run_forever()
         loop.close()
