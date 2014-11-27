@@ -33,6 +33,7 @@ db_path_remote_shared: %(config_dir)s/db/remote/shared
 db_path_shared_basenames: %(config_dir)s/db/remote/shared/basenames
 db_path_shared_trees: %(config_dir)s/db/remote/shared/trees
 sock_path: %(config_dir)s/sock
+admin_sock_file : %(config_dirs/admin.sock
 
 key_path: %(config_dir)s/keys
 key_file: %(config_dir)s/keys/local.key
@@ -62,6 +63,7 @@ db_path_shared_basenames = os.path.expanduser(cp.get('Main',
 db_path_shared_trees = os.path.expanduser(cp.get('Main',
                                                  'db_path_shared_trees'))
 sock_path = os.path.expanduser(cp.get('Main', 'sock_path'))
+admin_sock_file = os.path.expanduser(cp.get('Main', 'admin_sock_file'))
 key_path = os.path.expanduser(cp.get('Main', 'key_path'))
 key_file = os.path.expanduser(cp.get('Main', 'key_file'))
 

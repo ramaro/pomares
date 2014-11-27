@@ -1,7 +1,8 @@
 from nectar.crypto import CryptoBox, SecretBox, PublicKey, SecretKey, load_key, pubkey_sum, generate_keys
 from nectar.proto import IOReadChunkRequest, Ack, PomaresProtocol, BadHandshake, PomaresHandler, PubKeyReply
+from nectar.proto import PomaresAdminProtocol
 from nectar.proto import decompress_buff, compress_buff, encode, decode
-from nectar.config import key_path # allowed_keys
+from nectar.config import key_path, admin_sock_file # allowed_keys
 #from nectar.auth import Auth, AuthDeniedError, NotAllowedError
 from nectar.ioworker import io_reader
 from nectar.store import HashBasenames, TreeHashes, SumAllow
@@ -30,6 +31,8 @@ class PomaresServer:
         PomaresProtocol.route = self.route
         self.loop = asyncio.get_event_loop()
         self.server = self.loop.create_server(PomaresProtocol, address, port)
+        self.admin_server = self.loop.create_unix_server(PomaresAdminProtocol, 
+                                                         path=admin_sock_file)
 
     def route(self, handler, msg):
         logging.debug('(route) I am routing this msg: {}'.format(msg))
@@ -77,7 +80,9 @@ class PomaresServer:
     
     def run(self):
         session = self.loop.run_until_complete(self.server)
+        session_admin = self.loop.run_until_complete(self.admin_server)
         logging.debug('serving on {}'.format(session.sockets[0].getsockname()))
+        logging.debug('serving admin on {}'.format(session_admin.sockets[0].getsockname()))
         self.loop.run_forever()
 
 
