@@ -25,7 +25,8 @@ ROUTES = {
           }
 
 class PomaresServer:
-    def __init__(self, key_path, address='0.0.0.0', port=8080):
+    def __init__(self, key_path, address='0.0.0.0', port=8080,
+                 admin_sock=admin_sock_file):
         self.keyobj = load_key(key_path)
         self.routes = ROUTES
 
@@ -33,8 +34,7 @@ class PomaresServer:
         self.loop = asyncio.get_event_loop()
         self.server = self.loop.create_server(PomaresProtocol, address, port)
         self.admin_server = self.loop.create_unix_server(PomaresAdminProtocol, 
-                                                         path=admin_sock_file)
-
+                                                         path=admin_sock)
     def route(self, handler, msg):
         logging.debug('(route) I am routing this msg: {}'.format(msg))
         try:
@@ -87,15 +87,14 @@ class PomaresServer:
         self.loop.run_forever()
 
 
-def start_server(keyfile, address, port):
-    server = PomaresServer(pathjoin(key_path, keyfile), address, port)
+def start_server(keyfile, address, port, admin_sock):
+    server = PomaresServer(pathjoin(key_path, keyfile), address, port,
+                           admin_sock)
     server.run()
 
 
 if __name__ == '__main__':
-    if sys.argv[1] == 'server':
-        start_server()
-    elif sys.argv[1] == 'client':
+    if sys.argv[1] == 'client':
         loop = asyncio.get_event_loop()
         payload = sys.argv[2]
         payload = bytes(payload.encode())

@@ -12,10 +12,11 @@ import re
 def run(args):
     """starts server"""
     try:
-        server.start_server(args.keyfile, args.address, args.port)
+        server.start_server(args.keyfile, args.address, args.port,
+                            args.admin)
     except KeyboardInterrupt:
         logging.info('got a KeyboardInterrupt, quitting.')
-        unlink(config.admin_sock_file)
+        unlink(args.admin)
 
 def genkeys(args):
     """generates key files"""

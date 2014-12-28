@@ -26,6 +26,11 @@ if __name__ == '__main__':
                               action='store',
                               help='Keypair file to use (default is my.key)',
                               default='my.key', type=str, nargs='?')
+    start_parser.add_argument('--admin',
+                              action='store',
+                              help='Admin sock file to use (default is admin.sock)',
+                              default='admin.sock', type=str, nargs='?')
+
 
     list_parser = subparsers.add_parser('ls', help='List contents')
 
