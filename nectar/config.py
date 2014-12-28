@@ -33,7 +33,7 @@ db_path_remote_shared: %(config_dir)s/db/remote/shared
 db_path_shared_basenames: %(config_dir)s/db/remote/shared/basenames
 db_path_shared_trees: %(config_dir)s/db/remote/shared/trees
 sock_path: %(config_dir)s/sock
-admin_sock_file : %(config_dirs/admin.sock
+admin_sock_file : %(config_dir)s/admin.sock
 
 key_path: %(config_dir)s/keys
 key_file: %(config_dir)s/keys/local.key

@@ -8,6 +8,7 @@ from nectar.ioworker import io_reader
 from nectar.store import HashBasenames, TreeHashes, SumAllow
 from pprint import pprint
 from os.path import join as pathjoin
+from os import unlink
 import logging
 import sys
 import copy

@@ -5,12 +5,17 @@ from nectar import crypto
 from nectar import config
 from collections import namedtuple
 import os.path
-from os import listdir
+from os import listdir, unlink
+import logging
 import re
 
 def run(args):
     """starts server"""
-    server.start_server(args.keyfile, args.address, args.port)
+    try:
+        server.start_server(args.keyfile, args.address, args.port)
+    except KeyboardInterrupt:
+        logging.info('got a KeyboardInterrupt, quitting.')
+        unlink(config.admin_sock_file)
 
 def genkeys(args):
     """generates key files"""
