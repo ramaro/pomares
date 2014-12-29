@@ -26,13 +26,16 @@ if __name__ == '__main__':
                               action='store',
                               help='Keypair file to use (default is my.key)',
                               default='my.key', type=str, nargs='?')
-    start_parser.add_argument('--admin',
-                              action='store',
-                              help='Admin sock file to use (default is admin.sock)',
-                              default='admin.sock', type=str, nargs='?')
-
-
-    list_parser = subparsers.add_parser('ls', help='List contents')
+  
+    list_parser = subparsers.add_parser('ls', help='List pomares or trees')
+    list_parser.add_argument('--exported',
+                             action='store_true',
+                             default=False,
+                             help='List exported trees')
+    list_parser.add_argument('--imported',
+                             action='store_true',
+                             default=False,
+                             help='List imported trees')
 
 
     list_parser = subparsers.add_parser('keypairs', help='List keypair files')
@@ -42,25 +45,9 @@ if __name__ == '__main__':
                              default='/', nargs='*')
 
 
-    genkeys_parser = subparsers.add_parser('genkeys', help='Generate keypair files')
-    genkeys_parser.add_argument('keyfile', action='store', help='keypair filename',
+    genkey_parser = subparsers.add_parser('genkey', help='Generate keypair files')
+    genkey_parser.add_argument('keyfile', action='store', help='keypair filename',
                                 default=None, nargs='?')
-
-    about_parser = subparsers.add_parser('about',
-                                         help='About this instance')
-
-    share_parser = subparsers.add_parser('share', help='Share directory')
-    share_parser.add_argument('tree', action='store', help='Tree name')
-    share_parser.add_argument('directory', action='store',
-                              help='Directory path')
-
-    shared_parser = subparsers.add_parser('shared', help='List shared trees')
-
-    # aka, connect/join tree
-    tree_parser = subparsers.add_parser('tree', help='Add remote tree')
-    tree_parser.add_argument('alias', action='store', help='Peer Alias')
-    tree_parser.add_argument('tree', action='store', help='Tree name')
-
 
     key_parser = subparsers.add_parser('pubkey', help='Add public key')
     key_parser.add_argument('alias', action='store', help='Alias')
@@ -69,6 +56,21 @@ if __name__ == '__main__':
                             default=None, nargs='?',
                             help='Set address to key (add new peer)')
 
+
+
+    export_parser = subparsers.add_parser('export', help='Export local tree')
+    export_parser.add_argument('directory', action='store',
+                               help='Directory path')
+    export_parser.add_argument('tree', action='store', help='Tree name')
+
+    # aka, connect/join tree
+    import_parser = subparsers.add_parser('import', help='Import remote tree')
+    import_parser.add_argument('alias', action='store', help='Peer Alias')
+    import_parser.add_argument('tree', action='store', help='Tree name')
+
+
+    about_parser = subparsers.add_parser('about',
+                                         help='About this instance')
 
     args = parser.parse_args()
 

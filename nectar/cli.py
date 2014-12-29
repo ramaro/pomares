@@ -4,26 +4,26 @@ from nectar import server
 from nectar import crypto
 from nectar import config
 from collections import namedtuple
-import os.path
-from os import listdir, unlink
+from os.path import join as pathjoin
+from os import listdir, unlink, getcwd, chdir, walk, stat
+from hashlib import sha256
 import logging
 import re
 
 def run(args):
     """starts server"""
     try:
-        server.start_server(args.keyfile, args.address, args.port,
-                            args.admin)
+        server.start_server(args.keyfile, args.address, args.port)
     except KeyboardInterrupt:
         logging.info('got a KeyboardInterrupt, quitting.')
-        unlink(args.admin)
+        unlink(config.admin_sock_file)
 
-def genkeys(args):
+def genkey(args):
     """generates key files"""
     if not args.keyfile:
         crypto.generate_keys(config.key_file)
     else:
-        crypto.generate_keys(os.path.join(config.key_path,args.keyfile))
+        crypto.generate_keys(pathjoin(config.key_path,args.keyfile))
 
 def keypairs(args):
     """Lists keypair files in keypath"""
@@ -94,10 +94,10 @@ def walkdir(dir):
     return dir_structure
 
 
-def hashfile(filename):
-    """returns the sha1 hexed digest for filename."""
-    m = sha1()
-    with open(filename, 'r') as f:
+def _hashfile(filename):
+    """returns the sha256 hexed digest for filename."""
+    m = sha256()
+    with open(filename, 'rb') as f:
         data = True
         while data:
             data = f.read(8192)
@@ -106,15 +106,15 @@ def hashfile(filename):
     return m.hexdigest()
 
 
-def share_dir(dirname, treename):
-    pwd = curdir
+def export_dir(dirname, treename):
+    pwd = getcwd()
     try:
         chdir(dirname)
         for subdir, files in walkdir('.').items():
             for f in files:
                 fullpath = pathjoin(subdir, f)
                 try:
-                    _hash = hashfile(fullpath)
+                    _hash = _hashfile(fullpath)
                     print(fullpath, _hash)
 
                     _s = stat(fullpath)
@@ -138,14 +138,19 @@ def share_dir(dirname, treename):
         chdir(pwd)
 
 
-def share(args):
-    """[local]"""
+def export(args):
+    """export directory.
+    an exported directory creates a tree name in ~/.pomares/exported
+    and constructs the directory structure in the filesystem where each file is represented by
+    its hash and contains meta info (size, mtime, name, etc)
+    """
 
     # create task_list of filenames and meta:
-    task_list = share_dir(args.directory, args.tree)
+    task_list = export_dir(args.directory, args.tree)
+    print(list(task_list))
 
     # send values to managed peer:
-    do_managed(ShareTreeFileRequest, task_list)
+    #do_managed(ShareTreeFileRequest, task_list)
 
 
 def pubkeys(args):
@@ -219,22 +224,10 @@ def pubkey(args):
             exit(1)
 
 
-def do_managed(request_type, task_list):
-    """send a task_list of values on in currently managed peer
+def do_admin(request_type, task_list):
+    """send a task_list of values to admin socket
        task_list is a list of parameters for request_type"""
 
-    sumpeers = store.SumPeers()
-    sumkeys = store.SumKey()
-    managed = managed_session()
-    managed_peer = sumpeers[managed]
-
-    if not managed_peer:
-        raise Exception('no managed peer address set/found.')
-
-    peer_pubkey = sumkeys[managed]
-
-    task_queue = Queue()
-    host, port = managed_peer.split(':')
     for vals in task_list:
         dv = request_type(*vals)
         task_queue.put(dv)

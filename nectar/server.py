@@ -89,9 +89,8 @@ class PomaresServer:
         self.loop.run_forever()
 
 
-def start_server(keyfile, address, port, admin_sock):
-    server = PomaresServer(pathjoin(key_path, keyfile), address, port,
-                           admin_sock)
+def start_server(keyfile, address, port):
+    server = PomaresServer(pathjoin(key_path, keyfile), address, port)
     server.run()
 
 
