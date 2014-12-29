@@ -6,6 +6,7 @@ from nectar.config import key_path, admin_sock_file # allowed_keys
 #from nectar.auth import Auth, AuthDeniedError, NotAllowedError
 from nectar.ioworker import io_reader
 from nectar.store import HashBasenames, TreeHashes, SumAllow
+from nectar import admin
 from pprint import pprint
 from os.path import join as pathjoin
 from os import unlink
@@ -33,6 +34,7 @@ class PomaresServer:
         PomaresProtocol.route = self.route
         self.loop = asyncio.get_event_loop()
         self.server = self.loop.create_server(PomaresProtocol, address, port)
+        PomaresAdminProtocol.route = admin.route
         self.admin_server = self.loop.create_unix_server(PomaresAdminProtocol, 
                                                          path=admin_sock)
     def route(self, handler, msg):

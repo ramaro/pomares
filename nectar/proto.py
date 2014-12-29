@@ -47,7 +47,7 @@ class PomaresAdminHandler():
         self.transport = transport
 
     def send_data(self, payload):
-        self.transport.write("{}\n".format(payload))
+        self.transport.write(bytes('{}\n'.format(payload).encode()))
 
 class PomaresAdminProtocol(asyncio.Protocol):
 
@@ -64,8 +64,8 @@ class PomaresAdminProtocol(asyncio.Protocol):
 
         for n, char in enumerate(self.data_buffer):
             if char == 10: # 10 is \n
-                self.route(self.handler, self.data_buffer[:n].strip()) 
-                self.data_buffer = bytearray(self.data_buffer[n:])
+                self.route(self.handler, self.data_buffer[:n]) 
+                self.data_buffer = bytearray(self.data_buffer[n+1:])
 
     def route(self, handler, msg):
         logging.debug('got admin message: {}'.format(msg))
