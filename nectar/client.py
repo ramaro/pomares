@@ -1,11 +1,10 @@
-from config import key_path
-from crypto import CryptoBox, SecretBox, load_key
-from os.path import exists as path_exists, basename, dirname
-
-import asyncio
-
+from nectar.config import key_path
+from nectar.crypto import CryptoBox, SecretBox, load_key
 from nectar.proto import IOReadChunkRequest, Ack, PomaresProtocol, BadHandshake, PomaresHandler, PubKeyReply
-from nectar.proto import decompress_buff, compress_buff, encode, decode
+from nectar.proto import decompress_buff, compress_buff, encode, decode, PomaresAdminProtocol
+from nectar import admin
+from os.path import exists as path_exists, basename, dirname
+import asyncio
 import logging
 
 ROUTES = {}
@@ -72,10 +71,39 @@ class PomaresClient:
 
     def run(self):
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(loop.create_connection(lambda: self.client_prot, self.host, self.port))
+        loop.run_until_complete(loop.create_connection(lambda: self.client_prot,
+                                                       self.host, self.port))
         loop.run_forever()
         loop.close() 
     
+class PomaresAdminClient:
+    def __init__(self, admin_sock, commands):
+        """opens a client in admin_sock and iterates over commands
+        using talk()"""
+        self.admin_sock = admin_sock
+        self.commands = commands
+        self.reader = None
+        self.writer = None
+
+    @asyncio.coroutine
+    def talk(self):
+        self.reader, self.writer = yield from \
+                asyncio.open_unix_connection(self.admin_sock)
+        for cmd in iter(self.commands):
+            self.send(cmd)
+            answer = yield from self.reader.readline()
+            logging.debug('(PomaresAdminClient.talk) got answer: {}'.format(answer))
+
+    def send(self, payload):
+        self.writer.write(bytes('{}\n'.format(payload).encode()))
+
+    def run(self):
+        "runs event loop"
+        loop = asyncio.get_event_loop()
+        tasks = asyncio.async(self.talk())
+        loop.run_until_complete(tasks)
+        loop.close()
+
 
 if __name__ == '__main__':
     server_pub_key = load_key(key_path+'/my.key')

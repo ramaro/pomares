@@ -1,7 +1,8 @@
-"deal admin commands"
+"admin server-side commands"
 import logging
 
 def route(self, handler, msg):
     logging.debug('(admin route) I am routing this cmd: {}'.format(msg))
-    if msg.decode() == 'cmd1':
-        handler.send_data('cmd1 reply')
+    if msg.decode() == 'ping':
+        logging.debug('sending: pong')
+        handler.send_data('pong')

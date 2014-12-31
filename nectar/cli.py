@@ -1,8 +1,9 @@
-"""cli code"""
+"""command line interface"""
 from nectar import store
 from nectar import server
 from nectar import crypto
 from nectar import config
+from nectar import client
 from collections import namedtuple
 from os.path import join as pathjoin
 from os import listdir, unlink, getcwd, chdir, walk, stat
@@ -147,11 +148,13 @@ def export(args):
 
     # create task_list of filenames and meta:
     task_list = export_dir(args.directory, args.tree)
-    print(list(task_list))
+    #print(list(task_list))
+    do_admin(task_list)
 
     # send values to managed peer:
     #do_managed(ShareTreeFileRequest, task_list)
 
+    
 
 def pubkeys(args):
     sumkeys = store.SumKey()
@@ -224,25 +227,13 @@ def pubkey(args):
             exit(1)
 
 
-def do_admin(request_type, task_list):
-    """send a task_list of values to admin socket
-       task_list is a list of parameters for request_type"""
+#def do_admin(request_type, cmd):
+def do_admin(commands):
+    """send a command list to an admin socket"""
 
-    for vals in task_list:
-        dv = request_type(*vals)
-        task_queue.put(dv)
-    try:
-        PomaresClientHandler((host, port), pub_key,
-                             priv_key, pubkey_from_key(peer_pubkey),
-                             task_queue)
-
-    except BadHandshake:
-        print('got a bad handshake, aborting.')
-        exit(1)
-    except SetValuesRequestError:
-        print('couldn\'t set values, aborting.')
-        exit(1)
-
+    admin_client = client.PomaresAdminClient
+    commands = ['ping', 'ping']
+    admin_client(config.admin_sock_file, commands).run()
 
 def peer(args):
     """

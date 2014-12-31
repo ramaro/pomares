@@ -50,12 +50,18 @@ class PomaresAdminHandler():
         self.transport.write(bytes('{}\n'.format(payload).encode()))
 
 class PomaresAdminProtocol(asyncio.Protocol):
+    def __init__(self, payload=None):
+        self.payload = payload
 
     def connection_made(self, transport):
         logging.debug('admin connection made')
         self.handler = PomaresAdminHandler(transport)
         self.data_buffer = bytearray()
         self.data_buffer_size = 0
+
+        if self.payload:
+            self.handler.send_data(self.payload)
+            self.payload = None
 
     def data_received(self, data):
         logging.debug('received admin data: {}'.format(data))
