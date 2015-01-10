@@ -34,8 +34,8 @@ if __name__ == '__main__':
                              help='List exported trees')
     list_parser.add_argument('--imported',
                              action='store_true',
-                             default=False,
-                             help='List imported trees')
+                             default=True,
+                             help='List imported trees (default)')
 
 
     list_parser = subparsers.add_parser('keypairs', help='List keypair files')
@@ -67,6 +67,11 @@ if __name__ == '__main__':
     import_parser = subparsers.add_parser('import', help='Import remote tree')
     import_parser.add_argument('alias', action='store', help='Peer Alias')
     import_parser.add_argument('tree', action='store', help='Tree name')
+
+    raw_parser = subparsers.add_parser('raw', 
+                                       help='Send raw commands to admin sock')
+    raw_parser.add_argument('command', action='store', 
+                                       help='raw command')
 
 
     about_parser = subparsers.add_parser('about',

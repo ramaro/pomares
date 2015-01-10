@@ -115,8 +115,8 @@ def export_dir(dirname, treename):
             for f in files:
                 fullpath = pathjoin(subdir, f)
                 try:
-                    _hash = _hashfile(fullpath)
-                    print(fullpath, _hash)
+                    checksum = _hashfile(fullpath)
+                    print(fullpath, checksum)
 
                     _s = stat(fullpath)
                     hb = {'stat': {'ctime': _s.st_ctime,
@@ -126,7 +126,7 @@ def export_dir(dirname, treename):
                                    'mode': _s.st_mode,
                                    'uid': _s.st_uid,
                                    'gid': _s.st_gid},
-                          'hash': _hash,
+                          'checksum': checksum,
                           'path': fullpath,
                           'tree_path': dirname}
 
@@ -232,8 +232,15 @@ def do_admin(commands):
     """send a command list to an admin socket"""
 
     admin_client = client.PomaresAdminClient
-    commands = ['ping', 'ping']
+    commands = ['["ping"]', '["ping"]']
     admin_client(config.admin_sock_file, commands).run()
+
+def raw(args):
+    """send a raw json command to an admin socket"""
+    admin_client = client.PomaresAdminClient
+    commands = [args.command]
+    admin_client(config.admin_sock_file, commands).run()
+
 
 def peer(args):
     """
@@ -253,33 +260,6 @@ def peer(args):
                 print('peer for %s already set. (use the --force)' % args.alias)
                 exit(1)
 
-
-def manage(args):
-    """
-    Set or show managed peers [local]
-    """
-    summanaged = store.SumManaged()
-    sumaliases = store.SumAlias()
-
-    if args.alias:
-        #lookup alias:
-        for k in sumaliases:
-            if args.alias == sumaliases[k]:
-                summanaged[k] = 'manage'
-                open(pathjoin(config.config_dir, 
-                              '.managed_session'), 'w').write(k)
-                print('*', args.alias)
-                break
-    else:
-        current_session = managed_session()
-        if not current_session:
-            print('No current session set')
-            exit(1)
-
-        for k in summanaged:
-            if k == current_session:
-                print('*',)
-            print(sumaliases[k])
 
 
 def managed_session():
