@@ -26,20 +26,15 @@ if not os.path.exists(config_file):
         conf.write("""\
 [Main]
 debug_file: %(config_dir)s/debug.log
-db_path: %(config_dir)s/db
-db_path_local: %(config_dir)s/db/local
-db_path_remote: %(config_dir)s/db/remote
-db_path_remote_shared: %(config_dir)s/db/remote/shared
-db_path_shared_basenames: %(config_dir)s/db/remote/shared/basenames
-db_path_shared_trees: %(config_dir)s/db/remote/shared/trees
+index_path: %(config_dir)s/index
+index_path_exported: %(config_dir)s/index/exported/
+index_path_imported: %(config_dir)s/index/imported/
 sock_path: %(config_dir)s/sock
-admin_sock_file : %(config_dir)s/admin.sock
+admin_sock_file : %(config_dir)s/sock/admin.sock
+index_sock_file : %(config_dir)s/sock/index.sock
 
 key_path: %(config_dir)s/keys
 key_file: %(config_dir)s/keys/local.key
-
-request_timeout = 60
-connect_timeout = 30
 """     % {'config_dir': config_dir})
         conf.close()
     except:
@@ -50,28 +45,14 @@ connect_timeout = 30
 
 
 cp.read(os.path.expanduser(config_file))
-request_timeout = cp.getint('Main', 'request_timeout')
-connect_timeout = cp.getint('Main', 'connect_timeout')
 debug_file = os.path.expanduser(cp.get('Main', 'debug_file'))
-db_path = os.path.expanduser(cp.get('Main', 'db_path'))
-db_path_local = os.path.expanduser(cp.get('Main', 'db_path_local'))
-db_path_remote = os.path.expanduser(cp.get('Main', 'db_path_remote'))
-db_path_remote_shared = os.path.expanduser(cp.get('Main',
-                                                  'db_path_remote_shared'))
-db_path_shared_basenames = os.path.expanduser(cp.get('Main',
-                                                     'db_path_shared_basenames'))
-db_path_shared_trees = os.path.expanduser(cp.get('Main',
-                                                 'db_path_shared_trees'))
+index_path = os.path.expanduser(cp.get('Main', 'index_path'))
 sock_path = os.path.expanduser(cp.get('Main', 'sock_path'))
 admin_sock_file = os.path.expanduser(cp.get('Main', 'admin_sock_file'))
+index_sock_file = os.path.expanduser(cp.get('Main', 'index_sock_file'))
 key_path = os.path.expanduser(cp.get('Main', 'key_path'))
 key_file = os.path.expanduser(cp.get('Main', 'key_file'))
 
-create_dir(db_path)
-create_dir(db_path_local)
-create_dir(db_path_remote)
-create_dir(db_path_remote_shared)
-create_dir(db_path_shared_trees)
-create_dir(db_path_shared_basenames)
+create_dir(index_path)
 create_dir(sock_path)
 create_dir(key_path)

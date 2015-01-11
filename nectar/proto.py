@@ -42,9 +42,12 @@ class PomaresHandler():
         logging.debug('sending payload ({} bytes): {}'.format(payload_size, payload))
         self.transport.write(payload)
 
+
+
 class PomaresAdminHandler():
     def __init__(self, transport):
         self.transport = transport
+        self.index_writer = None
 
     def send_data(self, payload):
         self.transport.write(bytes('{}\n'.format(payload).encode()))
@@ -75,6 +78,15 @@ class PomaresAdminProtocol(asyncio.Protocol):
 
     def route(self, handler, msg):
         logging.debug('got admin message: {}'.format(msg))
+
+
+    def connection_lost(self, exc):
+        logging.debug('admin lost connection')
+        # commit index writer here
+        if self.handler.index_writer:
+            self.handler.index_writer.commit()
+            logging.debug('(admin handler) committed data in index_writer {}'.format(id(self.handler.index_writer)))
+
 
 
 class PomaresProtocol(asyncio.Protocol):

@@ -24,8 +24,8 @@ if __name__ == '__main__':
                               default=8080, type=int, nargs='?')
     start_parser.add_argument('--keyfile',
                               action='store',
-                              help='Keypair file to use (default is my.key)',
-                              default='my.key', type=str, nargs='?')
+                              help='Keypair file to use (default is local.key)',
+                              default='local.key', type=str, nargs='?')
   
     list_parser = subparsers.add_parser('ls', help='List pomares or trees')
     list_parser.add_argument('--exported',

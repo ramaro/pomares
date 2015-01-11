@@ -2,10 +2,8 @@ from nectar.crypto import CryptoBox, SecretBox, PublicKey, SecretKey, load_key, 
 from nectar.proto import IOReadChunkRequest, Ack, PomaresProtocol, BadHandshake, PomaresHandler, PubKeyReply
 from nectar.proto import PomaresAdminProtocol
 from nectar.proto import decompress_buff, compress_buff, encode, decode
-from nectar.config import key_path, admin_sock_file # allowed_keys
-#from nectar.auth import Auth, AuthDeniedError, NotAllowedError
+from nectar.config import key_path, admin_sock_file
 from nectar.ioworker import io_reader
-from nectar.store import HashBasenames, TreeHashes, SumAllow
 from nectar import admin
 from pprint import pprint
 from os.path import join as pathjoin
