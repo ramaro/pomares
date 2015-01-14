@@ -90,12 +90,15 @@ class PomaresAdminClient:
         self.reader, self.writer = yield from \
                 asyncio.open_unix_connection(self.admin_sock)
         for cmd in iter(self.commands):
-            self.send(cmd)
-            answer = yield from self.reader.readline()
-            logging.debug('(PomaresAdminClient.talk) got answer: {}'.format(answer))
+            logging.debug('(PomaresAdminClient.talk) sending cmd: {}'.format(cmd))
+            yield from self.send(cmd)
+            #answer = yield from self.reader.readline()
+            #logging.debug('(PomaresAdminClient.talk) got answer: {}'.format(answer))
 
+    @asyncio.coroutine
     def send(self, payload):
         self.writer.write(bytes('{}\n'.format(payload).encode()))
+        yield from self.writer.drain()
 
     def run(self):
         "runs event loop"

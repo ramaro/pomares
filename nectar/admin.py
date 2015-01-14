@@ -36,7 +36,7 @@ def route(self, handler, msg):
         msg = loads(msg.decode())
     except ValueError:
         # Any ValueError means a bad json message
-        logging.debug('(admin router) raising BadJsonMessage')
+        logging.debug('(admin route) raising BadJsonMessage')
         handler.send_data('["bad_json"]')
         raise BadJsonMessage()
 
@@ -48,8 +48,9 @@ def route(self, handler, msg):
         cmd_header = msg[0]
         cmd_values = msg[1:]
         cmd_reply = admin_commands[cmd_header](handler, cmd_values)
-        logging.debug('(admin router) sending: {}'.format(cmd_reply))
-        handler.send_data(cmd_reply)
+        if cmd_reply:
+            logging.debug('(admin route) sending: {}'.format(cmd_reply))
+            handler.send_data(cmd_reply)
     except KeyError:
         # Any KeyError means a bad request
         handler.send_data(dumps(['bad_request']))

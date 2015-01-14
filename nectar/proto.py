@@ -71,10 +71,12 @@ class PomaresAdminProtocol(asyncio.Protocol):
         # connection is made
         self.data_buffer.extend(data)
 
-        for n, char in enumerate(self.data_buffer):
-            if char == 10: # 10 is \n
-                self.route(self.handler, self.data_buffer[:n]) 
-                self.data_buffer = bytearray(self.data_buffer[n+1:])
+        for line in self.data_buffer.splitlines(keepends=True):
+            if line.endswith(b'\n'):
+                self.route(self.handler, line[:-1])
+            else:
+                self.data_buffer = line
+
 
     def route(self, handler, msg):
         logging.debug('got admin message: {}'.format(msg))
