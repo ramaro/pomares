@@ -48,14 +48,10 @@ def walkdir(dir):
     #subdirs: Files in root of type directory
     #files: Files in root (not in subFolders) of type other than directory
 
-    dir_structure = {}
     for root, subdirs, files in walk(dir):
-        dir_structure[root] = files
+        yield (root, files)
         for subdir in subdirs:
             walkdir(pathjoin(dir, subdir))
-
-    return dir_structure
-
 
 def _hashfile(filename):
     """returns the sha256 hexed digest for filename."""
@@ -73,7 +69,7 @@ def export_dir(dirname, treename):
     pwd = getcwd()
     try:
         chdir(dirname)
-        for subdir, files in walkdir('.').items():
+        for subdir, files in walkdir('.'):
             for f in files:
                 fullpath = pathjoin(subdir, f)
                 try:

@@ -15,7 +15,7 @@ class FileSchema(SchemaClass):
     "remote files"
     path = ID(stored=True) # without tree_path
     checksum = ID(stored=True)
-    size = NUMERIC(stored=True)
+    size = NUMERIC(bits=64, signed=False, stored=True)
     tree = ID(stored=True)
     tree_path = ID(stored=True)
     mtime = NUMERIC(stored=True)
