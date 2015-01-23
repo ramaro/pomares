@@ -92,17 +92,29 @@ class PomaresAdminClient:
         for cmd in iter(self.commands):
             logging.debug('(PomaresAdminClient.talk) sending cmd: {}'.format(cmd))
             yield from self.send(cmd)
-            #answer = yield from self.reader.readline()
-            #logging.debug('(PomaresAdminClient.talk) got answer: {}'.format(answer))
+            yield from self.read()
 
     @asyncio.coroutine
     def send(self, payload):
         self.writer.write(bytes('{}\n'.format(payload).encode()))
         yield from self.writer.drain()
 
+    @asyncio.coroutine
+    def read(self):
+        answer = yield from self.reader.readline()
+        logging.debug('(PomaresAdminClient.talk) got data: {}'.format(answer))
+        return answer
+
+
     def run(self):
         "runs event loop"
         loop = asyncio.get_event_loop()
+        # TODO talk() must generate multiple tasks
+        # task for connect()
+        # task for send()
+        # task for future read()
+        # currently this is only one big task and
+        # async read needs to be in its own task
         tasks = asyncio.async(self.talk())
         loop.run_until_complete(tasks)
         loop.close()
