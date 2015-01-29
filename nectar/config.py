@@ -26,9 +26,9 @@ if not os.path.exists(config_file):
         conf.write("""\
 [Main]
 debug_file: %(config_dir)s/debug.log
-index_path: %(config_dir)s/index
-index_path_exported: %(config_dir)s/index/exported/
-index_path_imported: %(config_dir)s/index/imported/
+index_path: %(config_dir)s/indexes
+index_path_exported: %(config_dir)s/indexes/exported/
+index_path_imported: %(config_dir)s/indexes/imported/
 sock_path: %(config_dir)s/sock
 admin_sock_file : %(config_dir)s/sock/admin.sock
 index_sock_file : %(config_dir)s/sock/index.sock

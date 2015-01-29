@@ -109,12 +109,6 @@ class PomaresAdminClient:
     def run(self):
         "runs event loop"
         loop = asyncio.get_event_loop()
-        # TODO talk() must generate multiple tasks
-        # task for connect()
-        # task for send()
-        # task for future read()
-        # currently this is only one big task and
-        # async read needs to be in its own task
         tasks = asyncio.async(self.talk())
         loop.run_until_complete(tasks)
         loop.close()

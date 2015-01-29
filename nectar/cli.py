@@ -94,12 +94,7 @@ def export_dir(dirname, treename):
 
 
 def export(args):
-    """export directory.
-    an exported directory creates a tree name in ~/.pomares/exported
-    and constructs the directory structure in the filesystem where each file is represented by
-    its hash and contains meta info (size, mtime, name, etc)
-    """
-
+    """export directory."""
     # create task_list of filenames and meta:
     task_list = export_dir(args.directory, args.tree)
     do_admin('export', task_list)
@@ -107,7 +102,6 @@ def export(args):
 
 def do_admin(cmd_header, cmd_values_list):
     """send a command list to an admin socket"""
-
     admin_client = client.PomaresAdminClient
     commands = ((dumps((cmd_header, c)) for c in cmd_values_list))
     admin_client(config.admin_sock_file, commands).run()
