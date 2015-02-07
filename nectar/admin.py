@@ -54,7 +54,7 @@ def route(self, handler, msg):
         # Any ValueError means a bad json message
         logging.debug('(admin route) raising BadJsonMessage')
         handler.send_data('["bad_json"]')
-        raise BadJsonMessage
+        return
 
     admin_commands = {'ping': (ping_msg, {}),
                       'export': (export_msg, export_msg_schema),
