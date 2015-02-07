@@ -8,7 +8,7 @@ Pomares is a distributed content distribuition system written in python 3 (async
 * Import remote content
 * Set logical imports/exports
 * Manage peer aliases and public keys
-* Get content from multiple peers
+* Peer-to-peer content
 
 
 ## Dependencies
