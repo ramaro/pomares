@@ -1,5 +1,5 @@
 from nectar.crypto import CryptoBox, SecretBox, PublicKey, SecretKey, load_key, pubkey_sum, generate_keys
-from nectar.proto import IOReadChunkRequest, Ack, PomaresProtocol, BadHandshake, PomaresHandler, PubKeyReply
+from nectar.proto import IOReadChunkRequest, Ack, PomaresServerProtocol, BadHandshake, PomaresHandler, PubKeyReply
 from nectar.proto import PomaresAdminProtocol
 from nectar.proto import decompress_buff, compress_buff, encode, decode
 from nectar.config import key_path, admin_sock_file
@@ -13,6 +13,7 @@ import sys
 import copy
 
 import asyncio
+import time
 
 def pubkey_reply(handler, args):
         print('running pubkey_reply!')
@@ -23,15 +24,58 @@ ROUTES = {
           'PubKeyReply': pubkey_reply,
           }
 
+class TimedDict:
+    """
+    TimeDict returns values for a key with max_time_secs of life.
+    Should a key have a life greater than max_times_secs, it is
+    deleted and KeyError is returned.
+    """
+    def __init__(self, max_time_secs=60):
+        self.max_time = max_time_secs
+        self.data = {}
+
+    def __getitem__(self, key):
+        print(self.data)
+        timestamp, item = self.data[key]
+        if self.now() - timestamp > self.max_time:
+            del self.data[key]
+            raise KeyError
+        else:
+            # update timestamp
+            self.data[key] = (self.now(), item)
+            return item
+        
+
+    def __setitem__(self, key, value):
+        self.data[key] = (self.now(), value)
+
+                
+    def expire(self):
+        "removes any old keys"
+        to_delete = []
+        for k, v in self.data.items():
+            if self.now() - v[0] > self.max_time:
+                to_delete.append(k)
+        for k in to_delete:
+            del self.data[k]
+            
+    def now(self):
+        return time.time()
+    
+
 class PomaresServer:
     def __init__(self, key_path, address='0.0.0.0', port=8080,
                  admin_sock=admin_sock_file):
+        self.address = address
+        self.port = port
         self.keyobj = load_key(key_path)
         self.routes = ROUTES
 
-        PomaresProtocol.route = self.route
+        #PomaresProtocol.route = self.route
         self.loop = asyncio.get_event_loop()
-        self.server = self.loop.create_server(PomaresProtocol, address, port)
+        self.server = self.loop.create_datagram_endpoint(PomaresServerProtocol, 
+                                                         local_addr=(address, 
+                                                                     port))
         PomaresAdminProtocol.route = admin.route
         self.admin_server = self.loop.create_unix_server(PomaresAdminProtocol, 
                                                          path=admin_sock)
@@ -82,7 +126,7 @@ class PomaresServer:
     def run(self):
         session = self.loop.run_until_complete(self.server)
         session_admin = self.loop.run_until_complete(self.admin_server)
-        logging.debug('serving on {}'.format(session.sockets[0].getsockname()))
+        logging.debug('serving on {}:{}'.format(self.address, self.port))
         logging.debug('serving admin on {}'.format(session_admin.sockets[0].getsockname()))
         self.loop.run_forever()
 

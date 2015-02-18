@@ -31,18 +31,6 @@ msg_dict = {'ChunkRequest':(0, ChunkRequest),
 msg_dict_rev = dict((v[0],v[1]) for k,v in msg_dict.items())
 
 
-class PomaresHandler():
-    def __init__(self, transport):
-        self.transport = transport
-        self.handshaked = False
-
-    def send_data(self, payload):
-        payload_size = len(payload)
-        payload = pack('<I{:d}s'.format(payload_size), payload_size, payload)
-        logging.debug('sending payload ({} bytes): {}'.format(payload_size, payload))
-        self.transport.write(payload)
-
-
 
 class PomaresAdminHandler():
     def __init__(self, transport):
@@ -89,6 +77,17 @@ class PomaresAdminProtocol(asyncio.Protocol):
             self.handler.index_writer.commit()
             logging.debug('(admin handler) committed data in index_writer {}'.format(id(self.handler.index_writer)))
 
+
+class PomaresHandler():
+    def __init__(self, transport):
+        self.transport = transport
+        self.handshaked = False
+
+    def send_data(self, payload):
+        payload_size = len(payload)
+        payload = pack('<I{:d}s'.format(payload_size), payload_size, payload)
+        logging.debug('sending payload ({} bytes): {}'.format(payload_size, payload))
+        self.transport.write(payload)
 
 
 class PomaresProtocol(asyncio.Protocol):
@@ -146,6 +145,40 @@ class PomaresProtocol(asyncio.Protocol):
     def route(self, handler, msg):
         logging.debug('got message: {}'.format(msg))
 
+class PomaresServerProtocol:
+    def connection_made(self, transport):
+        self.transport = transport
+
+    def datagram_received(self, data, addr):
+        message = data.decode()
+        print('Received %r from %s' % (message, addr))
+        print('Send %r to %s' % (message, addr))
+        self.transport.sendto(b'reply '+data, addr)
+
+class PomaresClientProtocol:
+    def __init__(self, message, loop):
+        self.message = message
+        self.loop = loop
+        self.transport = None
+
+    def connection_made(self, transport):
+        self.transport = transport
+        print('Send:', self.message)
+        self.transport.sendto(self.message.encode())
+
+    def datagram_received(self, data, addr):
+        print("Received:", data.decode())
+
+        print("Close the socket")
+        self.transport.close()
+
+    def error_received(self, exc):
+        print('Error received:', exc)
+
+    def connection_lost(self, exc):
+        print("Socket closed, stop the event loop")
+        loop = asyncio.get_event_loop()
+        loop.stop()
 
 
 def pack_proto(msg):
