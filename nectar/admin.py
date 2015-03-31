@@ -54,7 +54,7 @@ def route(self, handler, msg):
         # Any ValueError means a bad json message
         logging.debug('(admin route) raising BadJsonMessage')
         handler.send_data('["bad_json"]')
-        raise BadJsonMessage
+        raise BadJsonMessage()
 
     admin_commands = {'ping': (ping_msg, {}),
                       'export': (export_msg, export_msg_schema),
@@ -74,10 +74,10 @@ def route(self, handler, msg):
         try:
             if not validator.validate(cmd_values, schema):
                 logging.info('(admin route) msg not valid')
-                raise BadSchema
+                raise BadSchema()
         except ValidationError:
                 logging.info('(admin route) validation error')
-                raise BadSchema
+                raise BadSchema()
 
         # run func
         cmd_reply = func(handler, cmd_values)
@@ -94,3 +94,6 @@ def route(self, handler, msg):
     except BadSchema:
         # Any KeyError means a bad request
         handler.send_data(dumps(['bad_schema']))
+    except BadJsonMessage:
+        # Any KeyError means a bad request
+        handler.send_data(dumps(['bad_json']))
