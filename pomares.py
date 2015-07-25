@@ -1,8 +1,7 @@
 #!/usr/bin/env python3.4
 import argparse
 import sys
-
-from nectar import server, cli, utils, config, crypto
+from nectar import server, cli
 
 
 def startserver():
@@ -26,7 +25,7 @@ if __name__ == '__main__':
                               action='store',
                               help='Keypair file to use (default is local.key)',
                               default='local.key', type=str, nargs='?')
-  
+
     list_parser = subparsers.add_parser('ls', help='List pomares or trees')
     list_parser.add_argument('--exported',
                              action='store_true',
@@ -37,17 +36,18 @@ if __name__ == '__main__':
                              default=True,
                              help='List imported trees (default)')
 
+    keypairs_parser = subparsers.add_parser('keypairs',
+                                            help='List keypair files')
 
-    list_parser = subparsers.add_parser('keypairs', help='List keypair files')
+    keypairs_parser.add_argument('dirname', action='store',
+                                 help='Directory to list',
+                                 default='/', nargs='*')
 
-    list_parser.add_argument('dirname', action='store',
-                             help='Directory to list',
-                             default='/', nargs='*')
-
-
-    genkey_parser = subparsers.add_parser('genkey', help='Generate keypair files')
-    genkey_parser.add_argument('keyfile', action='store', help='keypair filename',
-                                default=None, nargs='?')
+    genkey_parser = subparsers.add_parser('genkey',
+                                          help='Generate keypair files')
+    genkey_parser.add_argument('keyfile', action='store',
+                               help='keypair filename',
+                               default=None, nargs='?')
 
     key_parser = subparsers.add_parser('pubkey', help='Add public key')
     key_parser.add_argument('alias', action='store', help='Alias')
@@ -55,8 +55,6 @@ if __name__ == '__main__':
     key_parser.add_argument('address', action='store',
                             default=None, nargs='?',
                             help='Set address to key (add new peer)')
-
-
 
     export_parser = subparsers.add_parser('export', help='Export local tree')
     export_parser.add_argument('directory', action='store',
@@ -68,11 +66,10 @@ if __name__ == '__main__':
     import_parser.add_argument('alias', action='store', help='Peer Alias')
     import_parser.add_argument('tree', action='store', help='Tree name')
 
-    raw_parser = subparsers.add_parser('raw', 
+    raw_parser = subparsers.add_parser('raw',
                                        help='Send raw commands to admin sock')
-    raw_parser.add_argument('command', action='store', 
-                                       help='raw command')
-
+    raw_parser.add_argument('command', action='store',
+                            help='raw command')
 
     about_parser = subparsers.add_parser('about',
                                          help='About this instance')
@@ -84,4 +81,3 @@ if __name__ == '__main__':
         func(args)
     except IndexError:
         parser.print_help()
-
