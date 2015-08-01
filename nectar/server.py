@@ -1,33 +1,21 @@
-from nectar.crypto import CryptoBox, SecretBox, PublicKey, SecretKey, load_key, pubkey_sum, generate_keys
-from nectar.proto import IOReadChunkRequest, Ack, PomaresProtocol, BadHandshake, PomaresHandler, PubKeyReply
+from nectar.crypto import CryptoBox, SecretBox, load_key
+from nectar.proto import PomaresProtocol, BadHandshake, PubKeyReply
 from nectar.proto import PomaresAdminProtocol
 from nectar.proto import decompress_buff, compress_buff, encode, decode
 from nectar.config import key_path, admin_sock_file
-from nectar.ioworker import io_reader
 from nectar import admin
-from pprint import pprint
+from nectar import routes
 from os.path import join as pathjoin
-from os import unlink
 import logging
 import sys
-import copy
 
 import asyncio
 
-def pubkey_reply(handler, args):
-    print('running pubkey_reply!')
-
-
-#TODO use a decorator instead here:
-ROUTES = {
-          'PubKeyReply': pubkey_reply,
-          }
 
 class PomaresServer:
     def __init__(self, key_path, address='0.0.0.0', port=8080,
                  admin_sock=admin_sock_file):
         self.keyobj = load_key(key_path)
-        self.routes = ROUTES
 
         PomaresProtocol.route = self.route
         self.loop = asyncio.get_event_loop()
@@ -35,6 +23,7 @@ class PomaresServer:
         PomaresAdminProtocol.route = admin.route
         self.admin_server = self.loop.create_unix_server(PomaresAdminProtocol,
                                                          path=admin_sock)
+
     def route(self, handler, msg):
         logging.debug('(route) I am routing this msg: {}'.format(msg))
         try:
@@ -50,9 +39,9 @@ class PomaresServer:
                 request = decode(msg)
                 logging.debug('(route) decrypted and decoded msg: {}'.format(request))
 
-                # TODO write route logic in separate module
-                #func = self.routes[req_key]
-                
+                # TODO treat client requests here
+                routes.talk_server(handler, request)
+
         except Exception as err:
             logging.info('ignoring request [bad key] {}'.format(err))
             raise
@@ -66,20 +55,19 @@ class PomaresServer:
             logging.debug("server init_box sk: {}".format(self.keyobj.sk))
 
             # init box with client's pubkey
-            handler.init_box.box_with(msg.key) 
+            handler.init_box.box_with(msg.key)
 
             # create and send secret
             handler.box = SecretBox()
-            sk_msg = encode(PubKeyReply(handler.box.sk)) 
+            sk_msg = encode(PubKeyReply(handler.box.sk))
             sk_msg = handler.init_box.encrypt(sk_msg)
-            handler.send_data(compress_buff(sk_msg)) 
+            handler.send_data(compress_buff(sk_msg))
 
             handler.handshaked = True
             logging.info('HANDSHAKED1')
         except:
             raise BadHandshake()
 
-    
     def run(self):
         session = self.loop.run_until_complete(self.server)
         session_admin = self.loop.run_until_complete(self.admin_server)

@@ -1,21 +1,21 @@
 from nectar.config import key_path
 from nectar.crypto import CryptoBox, SecretBox, load_key
-from nectar.proto import IOReadChunkRequest, Ack, PomaresProtocol, BadHandshake, PomaresHandler, PubKeyReply
-from nectar.proto import decompress_buff, compress_buff, encode, decode, PomaresAdminProtocol
-from nectar import admin
-from os.path import exists as path_exists, basename, dirname
+from nectar.proto import Ack, PomaresProtocol, PubKeyReply
+from nectar.proto import decompress_buff, compress_buff, encode, decode
 import asyncio
 import logging
 
 ROUTES = {}
 
+
 class PomaresClient:
-    def __init__(self, address, key_path, server_pub_key):
+    def __init__(self, address, key_path, server_pub_key, command):
         self.keyobj = load_key(key_path)
         logging.debug("client init_box pk: {}".format(self.keyobj.pk))
         logging.debug("client init_box sk: {}".format(self.keyobj.sk))
+        self.command = command
         PomaresProtocol.route = self.route
-        self.host, self.port = address # TODO make it a list for more connections
+        self.host, self.port = address
 
         self.do_handshake_init()
 
@@ -24,7 +24,6 @@ class PomaresClient:
         # send my pubkey to server
         handshk_payload = compress_buff(encode(PubKeyReply(self.keyobj.pk)))
         self.client_prot = PomaresProtocol(handshk_payload)
-
 
     def do_handshake(self, handler, msg):
         logging.debug('(route) do_handshake()')
@@ -39,12 +38,14 @@ class PomaresClient:
         handler.handshaked = True
         logging.debug('HANDSHAKED2')
 
-        # XXX send test msg
-        logging.debug('(route) send test msg')
-        new_msg = encode(Ack('acking this msg'))
+        # XXX send first command msg
+        logging.debug('(route) sending command msg')
+        self.send_command(handler)
+
+    def send_command(self, handler):
+        new_msg = encode(Ack(self.command))  # XXX Ack for now...
         new_msg = handler.box.encrypt(new_msg)
         handler.send_data(compress_buff(new_msg))
-
 
     def route(self, handler, msg):
         logging.debug('(route) I am routing this msg: {}'.format(msg))
@@ -53,29 +54,29 @@ class PomaresClient:
             logging.debug('(route) decompressed msg: {}'.format(msg))
             if not handler.handshaked:
                 logging.debug('(route) decoded msg: {}'.format(msg))
-                # at this point we can only expect PubKeyReply 
+                # at this point we can only expect PubKeyReply
                 self.do_handshake(handler, msg)
             else:
+                # receive messages:
                 msg = handler.box.decrypt(msg)
-            
                 request = decode(msg)
                 logging.debug('(route) got request: {}'.format(request))
-  
-                # XXX test
-                new_msg = encode(Ack('take that'))
-                new_msg = handler.box.encrypt(new_msg)
-                handler.send_data(compress_buff(new_msg))
+
+                # TODO treat server replies here
+
         except Exception as err:
             logging.debug('!!!! ignoring request [bad key] {}'.format(err))
             raise
 
     def run(self):
         loop = asyncio.get_event_loop()
-        loop.run_until_complete(loop.create_connection(lambda: self.client_prot,
-                                                       self.host, self.port))
+        coro = loop.create_connection(lambda: self.client_prot,
+                                      self.host, self.port)
+        loop.run_until_complete(coro)
         loop.run_forever()
-        loop.close() 
-    
+        loop.close()
+
+
 class PomaresAdminClient:
     def __init__(self, admin_sock, commands):
         """opens a client in admin_sock and iterates over commands
@@ -105,7 +106,6 @@ class PomaresAdminClient:
         logging.debug('(PomaresAdminClient.talk) got data: {}'.format(answer))
         return answer
 
-
     def run(self):
         "runs event loop"
         loop = asyncio.get_event_loop()
@@ -115,8 +115,12 @@ class PomaresAdminClient:
 
 
 if __name__ == '__main__':
-    server_pub_key = load_key(key_path+'/my.key')
-    server_pub_key = server_pub_key.pk
-    my_key = key_path+'/my_other.key'
-    c = PomaresClient(('127.0.0.1', 8080), my_key, server_pub_key)
+    import sys
+    server_pub_key = load_key(key_path+'/local.key').pk
+    my_key = key_path+'/my.key'
+    if len(sys.argv) > 1:
+        command = sys.argv[1]
+    else:
+        command = "default first command message"
+    c = PomaresClient(('127.0.0.1', 8080), my_key, server_pub_key, command)
     c.run()
