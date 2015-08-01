@@ -15,7 +15,7 @@ import copy
 import asyncio
 
 def pubkey_reply(handler, args):
-        print('running pubkey_reply!')
+    print('running pubkey_reply!')
 
 
 #TODO use a decorator instead here:
@@ -33,7 +33,7 @@ class PomaresServer:
         self.loop = asyncio.get_event_loop()
         self.server = self.loop.create_server(PomaresProtocol, address, port)
         PomaresAdminProtocol.route = admin.route
-        self.admin_server = self.loop.create_unix_server(PomaresAdminProtocol, 
+        self.admin_server = self.loop.create_unix_server(PomaresAdminProtocol,
                                                          path=admin_sock)
     def route(self, handler, msg):
         logging.debug('(route) I am routing this msg: {}'.format(msg))
@@ -43,13 +43,14 @@ class PomaresServer:
             if not handler.handshaked:
                 msg = decode(msg)
                 logging.debug('(route) decoded msg: {}'.format(msg))
-                # at this point we can only expect PubKeyReply 
+                # at this point we can only expect PubKeyReply
                 self.do_handshake(handler, msg)
             else:
                 msg = handler.box.decrypt(msg)
                 request = decode(msg)
                 logging.debug('(route) decrypted and decoded msg: {}'.format(request))
 
+                # TODO write route logic in separate module
                 #func = self.routes[req_key]
                 
         except Exception as err:

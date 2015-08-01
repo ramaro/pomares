@@ -72,8 +72,11 @@ def ls(args):
     """list trees"""
     if args.exported:
         tree_path = os.path.join(config.tree_path, 'exports')
+        # display directories only
         for tree_name in os.listdir(tree_path):
-            print("{}".format(tree_name[:len(tree_path)]))
+            tree_name_path = os.path.join(tree_path, tree_name)
+            if(os.path.isdir(tree_name_path)):
+                print("{}".format(tree_name[:len(tree_path)]))
 
 
 def get(args):

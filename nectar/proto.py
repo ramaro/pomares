@@ -5,30 +5,34 @@ from struct import pack, unpack
 import asyncio
 import logging
 
-ChunkRequest = namedtuple('ChunkRequest', ('tree', 'checksum', 'chunk_from', 'chunk_to'))
+ChunkRequest = namedtuple('ChunkRequest',
+                          ('tree', 'checksum', 'chunk_from', 'chunk_to'))
 ChunkReply = namedtuple('ChunkReply', ('data', 'seek', 'data_crc32'))
 SetValuesRequest = namedtuple('SetValuesRequest', ('db', 'values',))
 ValuesRequest = namedtuple('Values', ('values',))
 ShareTreeRequest = namedtuple('ShareTreeRequest', ('tree', 'hashes'))
-ShareTreeFileRequest = namedtuple('ShareTreeFileRequest', ('tree', 'hash_meta'))
-IOReadChunkRequest = namedtuple('IOReadChunkRequest', ('filename', 'offset', 'nbytes'))
+ShareTreeFileRequest = namedtuple('ShareTreeFileRequest',
+                                  ('tree', 'hash_meta'))
+IOReadChunkRequest = namedtuple('IOReadChunkRequest',
+                                ('filename', 'offset', 'nbytes'))
 SetPermsRequest = namedtuple('SetPermsRequest', ('tree', 'keysum', 'perms'))
 Ack = namedtuple('Ack', ('value',))
 PubKeyReply = namedtuple('PubKeyReply', ('key',))
 
-msg_dict = {'ChunkRequest':(0, ChunkRequest),
-            'ChunkReply':(1, ChunkReply),
-            'SetValuesRequest':(2, SetValuesRequest),
-            'SetPermsRequest':(3, SetPermsRequest),
-            'ValuesRequest':(4, ValuesRequest),
-            'ShareTreeRequest':(5, ShareTreeRequest),
-            'ShareTreeFileRequest':(6, ShareTreeFileRequest),
-            'IOReadChunkRequest':(7, IOReadChunkRequest),
-            'SetPermsRequest':(8, SetPermsRequest),
-            'Ack':(9, Ack),
-            'PubKeyReply':(10, PubKeyReply)
+msg_dict = {'ChunkRequest': (0, ChunkRequest),
+            'ChunkReply': (1, ChunkReply),
+            'SetValuesRequest': (2, SetValuesRequest),
+            'SetPermsRequest': (3, SetPermsRequest),
+            'ValuesRequest': (4, ValuesRequest),
+            'ShareTreeRequest': (5, ShareTreeRequest),
+            'ShareTreeFileRequest': (6, ShareTreeFileRequest),
+            'IOReadChunkRequest': (7, IOReadChunkRequest),
+            'SetPermsRequest': (8, SetPermsRequest),
+            'Ack': (9, Ack),
+            'PubKeyReply': (10, PubKeyReply)
             }
-msg_dict_rev = dict((v[0],v[1]) for k,v in msg_dict.items())
+# Reverse lookup:
+msg_dict_rev = dict((v[0], v[1]) for k, v in msg_dict.items())
 
 
 class PomaresHandler():
@@ -39,9 +43,9 @@ class PomaresHandler():
     def send_data(self, payload):
         payload_size = len(payload)
         payload = pack('<I{:d}s'.format(payload_size), payload_size, payload)
-        logging.debug('sending payload ({} bytes): {}'.format(payload_size, payload))
+        logging.debug('sending payload ({} bytes): {}'.format(payload_size,
+                                                              payload))
         self.transport.write(payload)
-
 
 
 class PomaresAdminHandler():
@@ -51,6 +55,7 @@ class PomaresAdminHandler():
 
     def send_data(self, payload):
         self.transport.write(bytes('{}\n'.format(payload).encode()))
+
 
 class PomaresAdminProtocol(asyncio.Protocol):
     def __init__(self, payload=None):
@@ -77,10 +82,8 @@ class PomaresAdminProtocol(asyncio.Protocol):
             else:
                 self.data_buffer = line
 
-
     def route(self, handler, msg):
         logging.debug('got admin message: {}'.format(msg))
-
 
     def connection_lost(self, exc):
         logging.debug('admin lost connection')
@@ -90,12 +93,10 @@ class PomaresAdminProtocol(asyncio.Protocol):
             logging.debug('(admin handler) committed data in index_writer {}'.format(id(self.handler.index_writer)))
 
 
-
 class PomaresProtocol(asyncio.Protocol):
     def __init__(self, payload=None):
         self.payload = payload
         self.header_size = 4
-
 
     def connection_made(self, transport):
         self.handler = PomaresHandler(transport)
@@ -107,7 +108,6 @@ class PomaresProtocol(asyncio.Protocol):
         if self.payload:
             self.handler.send_data(self.payload)
             self.payload = None
-
 
     def data_received(self, data):
         logging.debug('received data: {}'.format(data))
@@ -127,17 +127,15 @@ class PomaresProtocol(asyncio.Protocol):
             # got a complete msg, do stuff with it:
             logging.debug('got a complete msg, call route')
             self.route(self.handler, data[self.header_size:])
-            
+
             # reset for next msg
             logging.debug('## RESET ##')
             self.msg_size = 0
             self.data_buffer = bytearray(data[self.data_buffer_size:])
             self.data_buffer_size = len(self.data_buffer)
 
-
     def connection_lost(self, exc):
         logging.debug('lost connection')
-
 
     def encoded_size(self, data):
         "return size based on header_size (in bytes)"
@@ -147,17 +145,19 @@ class PomaresProtocol(asyncio.Protocol):
         logging.debug('got message: {}'.format(msg))
 
 
-
 def pack_proto(msg):
     msg_t = msg.__class__.__name__
     return tuple((msg_dict[msg_t][0],) + tuple((getattr(msg, f) for f in msg._fields)))
+
 
 def unpack_proto(msg):
     msg_t = msg_dict_rev[msg[0]]
     return msg_t(*msg[1:])
 
+
 def encode(msg):
     return packb(pack_proto(msg))
+
 
 def decode(msg_buff):
     return unpack_proto(unpackb(msg_buff))
@@ -166,14 +166,18 @@ def decode(msg_buff):
 def compress_buff(buff):
     return compress(buff)
 
+
 def decompress_buff(buff):
     return decompress(buff)
+
 
 class EncodeError(Exception):
     pass
 
+
 class DecodeError(Exception):
     pass
+
 
 class SetValuesRequestError(Exception):
     pass
