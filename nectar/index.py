@@ -3,7 +3,7 @@
 from whoosh.fields import SchemaClass, TEXT, ID, NUMERIC, DATETIME
 from whoosh import index, qparser
 from whoosh.writing import AsyncWriter
-import logging
+from nectar.utils import logger
 from nectar import config
 
 # each key is an index name
@@ -38,7 +38,7 @@ def get(index_name):
             ix = index.open_dir(config.index_path, schema=FileSchema, 
                                 indexname=index_name)
         except index.EmptyIndexError:
-            logging.info("no index \"{}\" found, creating a new one".format(index_name))
+            logger.info("no index \"{}\" found, creating a new one".format(index_name))
             ix = index.create_in(config.index_path, schema=FileSchema,
                                  indexname=index_name)
             indexes[index_name] = ix
@@ -48,7 +48,7 @@ def get(index_name):
 def get_writer(index_name):
     ix = get(index_name)
     wr = AsyncWriter(ix)
-    logging.debug("created index_writer for \"{}\" {}".format(index_name, id(wr)))
+    logger.debug("created index_writer for \"{}\" {}".format(index_name, id(wr)))
 
     return wr
 

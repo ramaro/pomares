@@ -1,5 +1,5 @@
 from nectar import proto
-import logging
+from nectar.utils import logger
 
 
 def echo(handler, request):
@@ -8,8 +8,18 @@ def echo(handler, request):
     handler.send_data(proto.compress_buff(new_msg))
 
 
+ROUTES_CLIENT = {'Ack': echo}
+
+
 def talk_client(handler, request):
-    pass
+    try:
+        req_type = request.__class__.__name__
+        func = ROUTES_CLIENT[req_type]
+        # found route, execute:
+        logger.info('routing {} -> {}'.format(req_type, func))
+        func(handler, request)
+    except KeyError as err:
+        logger.info('no route '+err)
 
 # TODO make this a decorator instead
 ROUTES_SERVER = {'Ack': echo}
@@ -20,7 +30,7 @@ def talk_server(handler, request):
         req_type = request.__class__.__name__
         func = ROUTES_SERVER[req_type]
         # found route, execute:
-        logging.info('(talk_server) routing {} -> {}'.format(req_type, func))
+        logger.info('routing {} -> {}'.format(req_type, func))
         func(handler, request)
     except KeyError as err:
-        logging.info('(talk_server) no route '+err)
+        logger.info('no route '+err)

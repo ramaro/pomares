@@ -4,10 +4,9 @@ from nectar import crypto
 from nectar import config
 from nectar import client
 from nectar import tree
-import os.path
+from nectar.utils import logger
 import os
-import logging
-from json import dumps
+import json
 
 
 def run(args):
@@ -15,7 +14,7 @@ def run(args):
     try:
         server.start_server(args.keyfile, args.address, args.port)
     except KeyboardInterrupt:
-        logging.info('got a KeyboardInterrupt, quitting.')
+        logger.info('got a KeyboardInterrupt, quitting.')
         os.unlink(config.admin_sock_file)
 
 
@@ -31,12 +30,26 @@ def genkey(args):
 def keypairs(args):
     """Lists keypair files in keypath"""
     for f in os.listdir(config.key_path):
-        print('- {}'.format(f))
+        keyobj_path = os.path.join(config.key_path, f)
+        keyobj = crypto.load_key(keyobj_path)
+        print('{}: {}'.format(f, crypto.pubkey_base64(keyobj)))
+
+
+def pubkey(args):
+    "Saves a pubkey for an alias"
+    pubkey_path = os.path.join(config.pubkey_path, args.alias)
+    pubkey_path += '.pubkey'
+    if os.path.exists(pubkey_path):
+        print("pubkey for alias {} already exists.".format(args.alias))
+        return
+    with open(pubkey_path, 'w') as f:
+        f.write(json.dumps({'pub': args.pubkey}))
 
 
 def about(args):
 
     keyobj = crypto.load_key(config.key_file)
+    print('key_file:', config.key_file)
     print('public_key:', crypto.pubkey_base64(keyobj))
     print('public_sum:', crypto.pubkey_sum(keyobj))
 
@@ -49,7 +62,7 @@ def export(args):
 def do_admin(cmd_header, cmd_values_list):
     """send a command list to an admin socket"""
     admin_client = client.PomaresAdminClient
-    commands = ((dumps((cmd_header, c)) for c in cmd_values_list))
+    commands = ((json.dumps((cmd_header, c)) for c in cmd_values_list))
     admin_client(config.admin_sock_file, commands).run()
 
 

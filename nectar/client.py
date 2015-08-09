@@ -2,17 +2,16 @@ from nectar.config import key_path
 from nectar.crypto import CryptoBox, SecretBox, load_key
 from nectar.proto import Ack, PomaresProtocol, PubKeyReply
 from nectar.proto import decompress_buff, compress_buff, encode, decode
+from nectar.utils import logger
+from nectar import routes
 import asyncio
-import logging
-
-ROUTES = {}
 
 
 class PomaresClient:
     def __init__(self, address, key_path, server_pub_key, command):
         self.keyobj = load_key(key_path)
-        logging.debug("client init_box pk: {}".format(self.keyobj.pk))
-        logging.debug("client init_box sk: {}".format(self.keyobj.sk))
+        logger.debug("client init_box pk: {}".format(self.keyobj.pk))
+        logger.debug("client init_box sk: {}".format(self.keyobj.sk))
         self.command = command
         PomaresProtocol.route = self.route
         self.host, self.port = address
@@ -20,13 +19,13 @@ class PomaresClient:
         self.do_handshake_init()
 
     def do_handshake_init(self):
-        logging.debug('(route) do_handshake_init()')
+        logger.debug('do_handshake_init()')
         # send my pubkey to server
         handshk_payload = compress_buff(encode(PubKeyReply(self.keyobj.pk)))
         self.client_prot = PomaresProtocol(handshk_payload)
 
     def do_handshake(self, handler, msg):
-        logging.debug('(route) do_handshake()')
+        logger.debug('do_handshake()')
         # expect server to send secret key to init_box
         handler.init_box = CryptoBox(self.keyobj)
         handler.init_box.box_with(server_pub_key)
@@ -36,36 +35,37 @@ class PomaresClient:
         msg = decode(msg)
         handler.box = SecretBox(key=msg.key)
         handler.handshaked = True
-        logging.debug('HANDSHAKED2')
+        logger.debug('HANDSHAKED2')
 
         # XXX send first command msg
-        logging.debug('(route) sending command msg')
+        logger.debug('sending command msg')
         self.send_command(handler)
 
     def send_command(self, handler):
-        new_msg = encode(Ack(self.command))  # XXX Ack for now...
+        new_msg = encode(self.command)
         new_msg = handler.box.encrypt(new_msg)
         handler.send_data(compress_buff(new_msg))
 
     def route(self, handler, msg):
-        logging.debug('(route) I am routing this msg: {}'.format(msg))
+        logger.debug('routing msg: {}'.format(msg))
         try:
             msg = decompress_buff(msg)
-            logging.debug('(route) decompressed msg: {}'.format(msg))
+            logger.debug('decompressed msg: {}'.format(msg))
             if not handler.handshaked:
-                logging.debug('(route) decoded msg: {}'.format(msg))
+                logger.debug('decoded msg: {}'.format(msg))
                 # at this point we can only expect PubKeyReply
                 self.do_handshake(handler, msg)
             else:
                 # receive messages:
                 msg = handler.box.decrypt(msg)
                 request = decode(msg)
-                logging.debug('(route) got request: {}'.format(request))
+                logger.debug('got request: {}'.format(request))
 
                 # TODO treat server replies here
+                routes.talk_client(handler, request)
 
         except Exception as err:
-            logging.debug('!!!! ignoring request [bad key] {}'.format(err))
+            logger.debug('ignoring request [bad key] {}'.format(err))
             raise
 
     def run(self):
@@ -89,9 +89,9 @@ class PomaresAdminClient:
     @asyncio.coroutine
     def talk(self):
         self.reader, self.writer = yield from \
-                asyncio.open_unix_connection(self.admin_sock)
+            asyncio.open_unix_connection(self.admin_sock)
         for cmd in iter(self.commands):
-            logging.debug('(PomaresAdminClient.talk) sending cmd: {}'.format(cmd))
+            logger.debug('sending cmd: {}'.format(cmd))
             yield from self.send(cmd)
             yield from self.read()
 
@@ -103,7 +103,7 @@ class PomaresAdminClient:
     @asyncio.coroutine
     def read(self):
         answer = yield from self.reader.readline()
-        logging.debug('(PomaresAdminClient.talk) got data: {}'.format(answer))
+        logger.debug('got data: {}'.format(answer))
         return answer
 
     def run(self):
@@ -122,5 +122,6 @@ if __name__ == '__main__':
         command = sys.argv[1]
     else:
         command = "default first command message"
-    c = PomaresClient(('127.0.0.1', 8080), my_key, server_pub_key, command)
+    c = PomaresClient(('127.0.0.1', 8080), my_key, server_pub_key,
+                      Ack(command))
     c.run()

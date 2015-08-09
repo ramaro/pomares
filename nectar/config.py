@@ -35,6 +35,7 @@ sock_path: %(config_dir)s/sock
 admin_sock_file : %(config_dir)s/sock/admin.sock
 index_sock_file : %(config_dir)s/sock/index.sock
 
+pubkey_path: %(config_dir)s/pubkeys
 key_path: %(config_dir)s/keys
 key_file: %(config_dir)s/keys/local.key
 """ % {'config_dir': config_dir})
@@ -54,6 +55,7 @@ tree_path = os.path.expanduser(cp.get('Main', 'tree_path'))
 sock_path = os.path.expanduser(cp.get('Main', 'sock_path'))
 admin_sock_file = os.path.expanduser(cp.get('Main', 'admin_sock_file'))
 index_sock_file = os.path.expanduser(cp.get('Main', 'index_sock_file'))
+pubkey_path = os.path.expanduser(cp.get('Main', 'pubkey_path'))
 key_path = os.path.expanduser(cp.get('Main', 'key_path'))
 key_file = os.path.expanduser(cp.get('Main', 'key_file'))
 
@@ -62,3 +64,4 @@ create_dir(object_path)
 create_dir(tree_path)
 create_dir(sock_path)
 create_dir(key_path)
+create_dir(pubkey_path)

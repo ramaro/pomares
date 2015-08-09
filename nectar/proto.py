@@ -3,7 +3,7 @@ from collections import namedtuple
 from zlib import compress, decompress
 from struct import pack, unpack
 import asyncio
-import logging
+from nectar.utils import logger
 
 ChunkRequest = namedtuple('ChunkRequest',
                           ('tree', 'checksum', 'chunk_from', 'chunk_to'))
@@ -43,8 +43,8 @@ class PomaresHandler():
     def send_data(self, payload):
         payload_size = len(payload)
         payload = pack('<I{:d}s'.format(payload_size), payload_size, payload)
-        logging.debug('sending payload ({} bytes): {}'.format(payload_size,
-                                                              payload))
+        logger.debug('sending payload ({} bytes): {}'.format(payload_size,
+                                                             payload))
         self.transport.write(payload)
 
 
@@ -62,7 +62,7 @@ class PomaresAdminProtocol(asyncio.Protocol):
         self.payload = payload
 
     def connection_made(self, transport):
-        logging.debug('admin connection made')
+        logger.debug('admin connection made')
         self.handler = PomaresAdminHandler(transport)
         self.data_buffer = bytearray()
         self.data_buffer_size = 0
@@ -72,7 +72,7 @@ class PomaresAdminProtocol(asyncio.Protocol):
             self.payload = None
 
     def data_received(self, data):
-        logging.debug('received admin data: {}'.format(data))
+        logger.debug('received admin data: {}'.format(data))
         # connection is made
         self.data_buffer.extend(data)
 
@@ -83,14 +83,14 @@ class PomaresAdminProtocol(asyncio.Protocol):
                 self.data_buffer = line
 
     def route(self, handler, msg):
-        logging.debug('got admin message: {}'.format(msg))
+        logger.debug('got admin message: {}'.format(msg))
 
     def connection_lost(self, exc):
-        logging.debug('admin lost connection')
+        logger.debug('admin lost connection')
         # commit index writer here
         if self.handler.index_writer:
             self.handler.index_writer.commit()
-            logging.debug('(admin handler) committed data in index_writer {}'.format(id(self.handler.index_writer)))
+            logger.debug('(admin handler) committed data in index_writer {}'.format(id(self.handler.index_writer)))
 
 
 class PomaresProtocol(asyncio.Protocol):
@@ -104,13 +104,13 @@ class PomaresProtocol(asyncio.Protocol):
         self.data_buffer_size = 0
         self.msg_size = 0
 
-        logging.debug('connection made')
+        logger.debug('connection made')
         if self.payload:
             self.handler.send_data(self.payload)
             self.payload = None
 
     def data_received(self, data):
-        logging.debug('received data: {}'.format(data))
+        logger.debug('received data: {}'.format(data))
 
         # connection is made
         self.data_buffer.extend(data)
@@ -118,36 +118,37 @@ class PomaresProtocol(asyncio.Protocol):
 
         if (not self.msg_size) and (self.data_buffer_size >= self.header_size):
             self.msg_size = self.encoded_size(self.data_buffer)
-            logging.debug('set msg_size to {}'.format(self.msg_size))
+            logger.debug('set msg_size to {}'.format(self.msg_size))
 
-        logging.debug('data_buffer_size: {}'.format(self.data_buffer_size))
-        logging.debug('msg_size: {}'.format(self.msg_size))
+        logger.debug('data_buffer_size: {}'.format(self.data_buffer_size))
+        logger.debug('msg_size: {}'.format(self.msg_size))
 
         if (self.data_buffer_size - self.header_size) >= self.msg_size:
             # got a complete msg, do stuff with it:
-            logging.debug('got a complete msg, call route')
+            logger.debug('got a complete msg, call route')
             self.route(self.handler, data[self.header_size:])
 
             # reset for next msg
-            logging.debug('## RESET ##')
+            logger.debug('## RESET ##')
             self.msg_size = 0
             self.data_buffer = bytearray(data[self.data_buffer_size:])
             self.data_buffer_size = len(self.data_buffer)
 
     def connection_lost(self, exc):
-        logging.debug('lost connection')
+        logger.debug('lost connection')
 
     def encoded_size(self, data):
         "return size based on header_size (in bytes)"
         return unpack('<I', data[:self.header_size])[0]
 
     def route(self, handler, msg):
-        logging.debug('got message: {}'.format(msg))
+        logger.debug('got message: {}'.format(msg))
 
 
 def pack_proto(msg):
     msg_t = msg.__class__.__name__
-    return tuple((msg_dict[msg_t][0],) + tuple((getattr(msg, f) for f in msg._fields)))
+    return tuple((msg_dict[msg_t][0],) +
+                 tuple((getattr(msg, f) for f in msg._fields)))
 
 
 def unpack_proto(msg):

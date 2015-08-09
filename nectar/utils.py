@@ -1,5 +1,12 @@
 from os.path import abspath, commonprefix, relpath
-from os.path import exists as pathexists
+import logging
+
+LOG_FMT = ('%(levelname)s %(name)s'
+           '.%(funcName)s:%(lineno)s %(asctime)s:%(message)s')
+logging.basicConfig(level=logging.DEBUG,
+                    format=LOG_FMT)
+logger = logging.getLogger(__name__)
+
 
 def path_valid(local_path, requested_path):
     """checks if requested_path is included in local_path
@@ -12,4 +19,3 @@ def path_valid(local_path, requested_path):
 
 class PathNotValidException(Exception):
     pass
-
