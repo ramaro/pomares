@@ -4,6 +4,7 @@ from nectar import crypto
 from nectar import config
 from nectar import client
 from nectar import tree
+from nectar import proto
 from nectar.utils import logger
 import os
 import json
@@ -43,7 +44,8 @@ def pubkey(args):
         print("pubkey for alias {} already exists.".format(args.alias))
         return
     with open(pubkey_path, 'w') as f:
-        f.write(json.dumps({'pub': args.pubkey}))
+        f.write(json.dumps({'pub': args.pubkey,
+                            'address': args.address}))
 
 
 def about(args):
@@ -75,10 +77,12 @@ def raw(args):
 
 def import_tree(args):
     """import (remote) tree"""
-    args.tree
-    args.alias
-
-    pass
+    pubkey_path = os.path.join(config.pubkey_path, args.alias)
+    srv_pubkey, address = crypto.load_pubkey(pubkey_path+'.pubkey')
+    my_key = config.key_file
+    c = client.PomaresClient(address, my_key, srv_pubkey.pk,
+                             proto.ImportTreeRequest(args.tree))
+    c.run()
 
 
 def ls(args):

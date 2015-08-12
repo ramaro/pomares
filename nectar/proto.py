@@ -5,31 +5,16 @@ from struct import pack, unpack
 import asyncio
 from nectar.utils import logger
 
-ChunkRequest = namedtuple('ChunkRequest',
-                          ('tree', 'checksum', 'chunk_from', 'chunk_to'))
-ChunkReply = namedtuple('ChunkReply', ('data', 'seek', 'data_crc32'))
-SetValuesRequest = namedtuple('SetValuesRequest', ('db', 'values',))
-ValuesRequest = namedtuple('Values', ('values',))
-ShareTreeRequest = namedtuple('ShareTreeRequest', ('tree', 'hashes'))
-ShareTreeFileRequest = namedtuple('ShareTreeFileRequest',
-                                  ('tree', 'hash_meta'))
-IOReadChunkRequest = namedtuple('IOReadChunkRequest',
-                                ('filename', 'offset', 'nbytes'))
-SetPermsRequest = namedtuple('SetPermsRequest', ('tree', 'keysum', 'perms'))
 Ack = namedtuple('Ack', ('value',))
 PubKeyReply = namedtuple('PubKeyReply', ('key',))
+ImportTreeRequest = namedtuple('ImportTreeRequest', ('tree'))
+IOReadChunkRequest = namedtuple('IOReadChunkRequest',
+                                ('filename', 'offset', 'nbytes'))
 
-msg_dict = {'ChunkRequest': (0, ChunkRequest),
-            'ChunkReply': (1, ChunkReply),
-            'SetValuesRequest': (2, SetValuesRequest),
-            'SetPermsRequest': (3, SetPermsRequest),
-            'ValuesRequest': (4, ValuesRequest),
-            'ShareTreeRequest': (5, ShareTreeRequest),
-            'ShareTreeFileRequest': (6, ShareTreeFileRequest),
-            'IOReadChunkRequest': (7, IOReadChunkRequest),
-            'SetPermsRequest': (8, SetPermsRequest),
-            'Ack': (9, Ack),
-            'PubKeyReply': (10, PubKeyReply)
+msg_dict = {'Ack': (1, Ack),
+            'PubKeyReply': (2, PubKeyReply),
+            'ImportTreeRequest': (3, ImportTreeRequest),
+            'IOReadChunkRequest': (4, IOReadChunkRequest),
             }
 # Reverse lookup:
 msg_dict_rev = dict((v[0], v[1]) for k, v in msg_dict.items())

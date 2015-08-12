@@ -21,8 +21,16 @@ def talk_client(handler, request):
     except KeyError as err:
         logger.info('no route '+err)
 
+
+def import_tree_req(handler, request):
+    new_msg = proto.encode(proto.Ack(b'import reply ' + request.tree))
+    new_msg = handler.box.encrypt(new_msg)
+    handler.send_data(proto.compress_buff(new_msg))
+
+
 # TODO make this a decorator instead
-ROUTES_SERVER = {'Ack': echo}
+ROUTES_SERVER = {'Ack': echo,
+                 'ImportTreeRequest': import_tree_req}
 
 
 def talk_server(handler, request):

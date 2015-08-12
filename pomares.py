@@ -53,7 +53,6 @@ if __name__ == '__main__':
     key_parser.add_argument('alias', action='store', help='Alias')
     key_parser.add_argument('pubkey', action='store', help='Public Key')
     key_parser.add_argument('address', action='store',
-                            default=None, nargs='?',
                             help='Set address to key (add new peer)')
 
     export_parser = subparsers.add_parser('export', help='Export local tree')
@@ -77,7 +76,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     try:
-        func = getattr(cli, sys.argv[1])
+        # TODO get rid of this when using click
+        # instead of argparse
+        if sys.argv[1] == 'import':
+            func = cli.import_tree
+        else:
+            func = getattr(cli, sys.argv[1])
         func(args)
     except IndexError:
         parser.print_help()

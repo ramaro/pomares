@@ -4,6 +4,7 @@ from libnacl.secret import SecretBox
 from libnacl.utils import load_key as j_loadkey
 from hashlib import sha256
 import base64
+import json
 
 
 class CryptoBox():
@@ -29,9 +30,20 @@ def generate_keys(key_file):
 
 
 def load_key(key_file):
-    """returns a SecretKey obj for key_path"""
+    """returns a SecretKey obj for key_file"""
 
     return j_loadkey(key_file)
+
+
+def load_pubkey(pubkey_file):
+    """returns a PublicKey obj and address for pubkey_file"""
+    with open(pubkey_file, 'r') as f:
+        pubkey = json.loads(f.read())
+        address = pubkey.get('address', None)
+        address = tuple(address.split(':'))
+        pub = base64.b64decode(pubkey['pub'])
+
+        return PublicKey(pub), address
 
 
 def pubkey_base64(keyobj):

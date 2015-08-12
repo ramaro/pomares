@@ -15,6 +15,7 @@ class PomaresClient:
         self.command = command
         PomaresProtocol.route = self.route
         self.host, self.port = address
+        self.server_pub_key = server_pub_key
 
         self.do_handshake_init()
 
@@ -28,7 +29,7 @@ class PomaresClient:
         logger.debug('do_handshake()')
         # expect server to send secret key to init_box
         handler.init_box = CryptoBox(self.keyobj)
-        handler.init_box.box_with(server_pub_key)
+        handler.init_box.box_with(self.server_pub_key)
 
         # receive server secretkey
         msg = handler.init_box.decrypt(msg)
