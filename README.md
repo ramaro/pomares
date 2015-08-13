@@ -1,6 +1,6 @@
 # Pomares
 
-Pomares is a distributed content distribuition system written in python 3 (asyncio) that relies on a closed network of trusted peers.
+Pomares is a distributed content distribution system written in python 3 (asyncio) that relies on a closed network of trusted peers.
 
 ## Features
 
