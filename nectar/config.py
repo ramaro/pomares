@@ -34,6 +34,7 @@ index_path_imported: %(config_dir)s/indexes/imported/
 sock_path: %(config_dir)s/sock
 admin_sock_file : %(config_dir)s/sock/admin.sock
 index_sock_file : %(config_dir)s/sock/index.sock
+io_sock_file : %(config_dir)s/sock/io.sock
 
 pubkey_path: %(config_dir)s/pubkeys
 key_path: %(config_dir)s/keys
@@ -55,6 +56,7 @@ tree_path = os.path.expanduser(cp.get('Main', 'tree_path'))
 sock_path = os.path.expanduser(cp.get('Main', 'sock_path'))
 admin_sock_file = os.path.expanduser(cp.get('Main', 'admin_sock_file'))
 index_sock_file = os.path.expanduser(cp.get('Main', 'index_sock_file'))
+io_sock_file = os.path.expanduser(cp.get('Main', 'io_sock_file'))
 pubkey_path = os.path.expanduser(cp.get('Main', 'pubkey_path'))
 key_path = os.path.expanduser(cp.get('Main', 'key_path'))
 key_file = os.path.expanduser(cp.get('Main', 'key_file'))

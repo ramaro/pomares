@@ -1,8 +1,8 @@
 from nectar.crypto import CryptoBox, SecretBox, load_key
 from nectar.proto import PomaresProtocol, BadHandshake, PubKeyReply
-from nectar.proto import PomaresAdminProtocol
+from nectar.proto import PomaresAdminProtocol, PomaresIOProtocol
 from nectar.proto import decompress_buff, compress_buff, encode, decode
-from nectar.config import key_path, admin_sock_file
+from nectar.config import key_path, admin_sock_file, io_sock_file
 from nectar import admin
 from nectar import routes
 from nectar.utils import logger
@@ -14,7 +14,7 @@ import asyncio
 
 class PomaresServer:
     def __init__(self, key_path, address='0.0.0.0', port=8080,
-                 admin_sock=admin_sock_file):
+                 admin_sock=admin_sock_file, io_sock=io_sock_file):
         self.keyobj = load_key(key_path)
 
         PomaresProtocol.route = self.route
@@ -23,6 +23,8 @@ class PomaresServer:
         PomaresAdminProtocol.route = admin.route
         self.admin_server = self.loop.create_unix_server(PomaresAdminProtocol,
                                                          path=admin_sock)
+        self.io_server = self.loop.create_unix_server(PomaresIOProtocol,
+                                                      path=io_sock)
 
     def route(self, handler, msg):
         logger.debug('routing msg: {}'.format(msg))
@@ -71,9 +73,12 @@ class PomaresServer:
     def run(self):
         session = self.loop.run_until_complete(self.server)
         session_admin = self.loop.run_until_complete(self.admin_server)
+        session_io = self.loop.run_until_complete(self.io_server)
         logger.debug('serving on {}'.format(session.sockets[0].getsockname()))
         logger.debug('serving admin on {}'.format(session_admin.sockets[0].
                                                   getsockname()))
+        logger.debug('serving io on {}'.format(session_io.sockets[0].
+                                               getsockname()))
         self.loop.run_forever()
 
 

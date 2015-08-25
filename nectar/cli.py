@@ -17,6 +17,7 @@ def run(args):
     except KeyboardInterrupt:
         logger.info('got a KeyboardInterrupt, quitting.')
         os.unlink(config.admin_sock_file)
+        os.unlink(config.io_sock_file)
 
 
 def genkey(args):

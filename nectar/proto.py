@@ -4,6 +4,7 @@ from zlib import compress, decompress
 from struct import pack, unpack
 import asyncio
 from nectar.utils import logger
+from concurrent.futures import ThreadPoolExecutor
 
 Ack = namedtuple('Ack', ('value',))
 PubKeyReply = namedtuple('PubKeyReply', ('key',))
@@ -24,6 +25,7 @@ class PomaresHandler():
     def __init__(self, transport):
         self.transport = transport
         self.handshaked = False
+        self.io_transport = None
 
     def send_data(self, payload):
         payload_size = len(payload)
@@ -75,16 +77,18 @@ class PomaresAdminProtocol(asyncio.Protocol):
         # commit index writer here
         if self.handler.index_writer:
             self.handler.index_writer.commit()
-            logger.debug('(admin handler) committed data in index_writer {}'.format(id(self.handler.index_writer)))
+            logger.debug('(admin handler) committed data in index_writer {}'.
+                         format(id(self.handler.index_writer)))
 
 
 class PomaresProtocol(asyncio.Protocol):
-    def __init__(self, payload=None):
+    def __init__(self, payload=None, handler_type=PomaresHandler):
         self.payload = payload
         self.header_size = 4
+        self.handler_type = handler_type
 
     def connection_made(self, transport):
-        self.handler = PomaresHandler(transport)
+        self.handler = self.handler_type(transport)
         self.data_buffer = bytearray()
         self.data_buffer_size = 0
         self.msg_size = 0
@@ -128,6 +132,25 @@ class PomaresProtocol(asyncio.Protocol):
 
     def route(self, handler, msg):
         logger.debug('got message: {}'.format(msg))
+
+
+class PomaresIOHandler(PomaresHandler):
+    def __init__(self, transport):
+        super().__init__(transport)
+        del self.handshaked
+        del self.io_transport
+
+
+class PomaresIOProtocol(PomaresProtocol):
+    def __init__(self, payload=None, workers=4):
+        super().__init__(payload, handler_type=PomaresIOHandler)
+        self.executor = ThreadPoolExecutor(max_workers=workers)
+
+    def connection_made(self, transport):
+        super().connection_made(transport)
+
+    def route(self, handler, msg):
+        logger.debug('>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> got message: {}'.format(msg))
 
 
 def pack_proto(msg):

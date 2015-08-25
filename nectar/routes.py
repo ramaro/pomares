@@ -1,5 +1,6 @@
-from nectar import proto
+from nectar import proto, config
 from nectar.utils import logger
+import asyncio
 
 
 def echo(handler, request):
@@ -23,6 +24,14 @@ def talk_client(handler, request):
 
 
 def import_tree_req(handler, request):
+    loop = asyncio.get_event_loop()
+    # TODO
+    """
+    if not handler.io_transport:
+        handler.io_transport, _ = \
+            loop.create_unix_connection(proto.PomaresIOProtocol,
+                                        config.io_sock_file)
+    """
     new_msg = proto.encode(proto.Ack(b'import reply ' + request.tree))
     new_msg = handler.box.encrypt(new_msg)
     handler.send_data(proto.compress_buff(new_msg))
