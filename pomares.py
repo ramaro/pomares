@@ -3,10 +3,6 @@ import click
 from nectar import server, cli
 
 
-def startserver():
-    server.start_server()
-
-
 @click.group()
 def pomares():
     """Pomares file distribution"""
@@ -121,16 +117,3 @@ def about():
 if __name__ == '__main__':
     pomares()
 
-"""
-
-    try:
-        # TODO get rid of this when using click
-        # instead of argparse
-        if sys.argv[1] == 'import':
-            func = cli.import_tree
-        else:
-            func = getattr(cli, sys.argv[1])
-        func(args)
-    except IndexError:
-        parser.print_help()
-        """
