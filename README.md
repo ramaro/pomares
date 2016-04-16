@@ -4,9 +4,9 @@ Pomares is a distributed content distribution system written in python 3 (asynci
 
 ## Features
 
-* Export local content
-* Import remote content
-* Set logical imports/exports
+* Seed (export) local content
+* Plant (import) remote content
+* Set logical trees 
 * Manage peer aliases and public keys
 * Peer-to-peer content
 
@@ -36,20 +36,17 @@ Pomares is a distributed content distribution system written in python 3 (asynci
 #### Run Server
     pomares run 
 
-#### Export a local directory
-    pomares export ~/public_stuff public
+#### Seed a local directory
+    pomares seed ~/public_stuff public
 
 #### Add a peer (example)
     pomares pubkey friend1 eYgtH9qbZFiiVbeGxuVpSyGv6HTkBHiROx5siwyaK3E= friend1.host.name:8111
 
-#### Import a tree from a peer
-    pomares import friend1 his_public_stuff
+#### Plant a tree from a peer
+    pomares plant friend1 his_public_stuff
 
-#### List imported trees
+#### List planted trees
     pomares ls
-
-#### Copy imported content
-    pomares cp path/to/remote/content local_dir/
 
 
 ## License
