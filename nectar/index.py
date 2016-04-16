@@ -10,52 +10,56 @@ from nectar import config
 indexes = {}
 
 
-# generic File schema for imports/exports
+# generic File schema for seeds/plants
 class FileSchema(SchemaClass):
     "remote files"
-    path = ID(stored=True) # without tree_path
+    path = ID(stored=True)  # without tree_path
     checksum = ID(stored=True)
     size = NUMERIC(bits=64, signed=False, stored=True)
     tree = ID(stored=True)
     tree_path = ID(stored=True)
     mtime = NUMERIC(stored=True)
-    pubkey = ID(stored=True) # only needed for imports
+    pubkey = ID(stored=True)  # only needed for plants
 
 
 class TreeViewSchema(SchemaClass):
     """user designed tree view.
-    set names and paths for imported files
+    set names and paths for planted files
     e.g. set *.jpg as 'jpegs' tree"""
     path = ID(stored=True, unique=True)
     checksum = ID(stored=True)
     tree = ID(stored=True)
+
 
 def get(index_name):
     try:
         return indexes[index_name]
     except KeyError:
         try:
-            ix = index.open_dir(config.index_path, schema=FileSchema, 
+            ix = index.open_dir(config.index_path, schema=FileSchema,
                                 indexname=index_name)
         except index.EmptyIndexError:
-            logger.info("no index \"{}\" found, creating a new one".format(index_name))
+            logger.info("no index \"{}\" found, creating a new one"
+                        .format(index_name))
             ix = index.create_in(config.index_path, schema=FileSchema,
                                  indexname=index_name)
             indexes[index_name] = ix
 
         return ix
 
+
 def get_writer(index_name):
     ix = get(index_name)
     wr = AsyncWriter(ix)
-    logger.debug("created index_writer for \"{}\" {}".format(index_name, id(wr)))
+    logger.debug("created index_writer for \"{}\" {}"
+                 .format(index_name, id(wr)))
 
     return wr
 
 
 if __name__ == '__main__':
-    schema = ExportedFileSchema()
-    tschema = TreeSchema()
+    schema = SeededFileSchema()
+    schema = TreeSchema()
 
     ix = index.create_in("/tmp/indexes", indexname="files", schema=schema)
     w = ix.writer()

@@ -58,8 +58,8 @@ def about():
 
 
 def seed(directory, tree_name):
-    """export directory as tree."""
-    tree.export_dir(directory, tree_name)
+    """seed directory as tree."""
+    tree.seed_dir(directory, tree_name)
 
 
 def do_admin(cmd_header, cmd_values_list):
@@ -77,19 +77,19 @@ def raw(command):
 
 
 def plant(alias, tree):
-    """import (remote) tree"""
+    """plant (remote) tree"""
     pubkey_path = os.path.join(config.pubkey_path, alias)
     srv_pubkey, address = crypto.load_pubkey(pubkey_path+'.pubkey')
     my_key = config.key_file
     c = client.PomaresClient(address, my_key, srv_pubkey.pk,
-                             proto.ImportTreeRequest(tree))
+                             proto.PlantTreeRequest(tree))
     c.run()
 
 
 def ls(seeded, planted):
     """list trees"""
     if seeded:
-        tree_path = os.path.join(config.tree_path, 'exports')
+        tree_path = os.path.join(config.tree_path, 'seeds')
         # display directories only
         for tree_name in os.listdir(tree_path):
             tree_name_path = os.path.join(tree_path, tree_name)

@@ -79,7 +79,7 @@ def write_file_objects_trees(fullpath, treename, obj_hashes):
     will create tree structure
     where each file is a offset/object_hash map
     """
-    tree_basedir = os.path.join(config.tree_path, 'exports', treename,
+    tree_basedir = os.path.join(config.tree_path, 'seeds', treename,
                                 os.path.dirname(fullpath))
     tree_basedir = os.path.normpath(tree_basedir)
     filename = os.path.basename(fullpath)
@@ -105,9 +105,9 @@ def write_file_objects_trees(fullpath, treename, obj_hashes):
                 pass
 
 
-def export_dir(dirname, treename):
+def seed_dir(dirname, treename):
     """
-    export directories in dirname
+    seed directories in dirname
     and copy chunk objects under treename
     """
     pwd = os.getcwd()
