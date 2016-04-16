@@ -10,26 +10,26 @@ import os
 import json
 
 
-def run(args):
+def run(address, port, keyfile):
     """starts server"""
     try:
-        server.start_server(args.keyfile, args.address, args.port)
+        server.start_server(keyfile, address, port)
     except KeyboardInterrupt:
         logger.info('got a KeyboardInterrupt, quitting.')
         os.unlink(config.admin_sock_file)
         os.unlink(config.io_sock_file)
 
 
-def genkey(args):
+def genkey(keyfile):
     """generates key files"""
-    if not args.keyfile:
+    if not keyfile:
         crypto.generate_keys(config.key_file)
     else:
         crypto.generate_keys(os.path.join(config.key_path,
-                                          args.keyfile))
+                                          keyfile))
 
 
-def keypairs(args):
+def keypairs(dirname):
     """Lists keypair files in keypath"""
     for f in os.listdir(config.key_path):
         keyobj_path = os.path.join(config.key_path, f)
@@ -37,19 +37,19 @@ def keypairs(args):
         print('{}: {}'.format(f, crypto.pubkey_base64(keyobj)))
 
 
-def pubkey(args):
+def pubkey(alias, pubkey, address):
     "Saves a pubkey for an alias"
-    pubkey_path = os.path.join(config.pubkey_path, args.alias)
+    pubkey_path = os.path.join(config.pubkey_path, alias)
     pubkey_path += '.pubkey'
     if os.path.exists(pubkey_path):
-        print("pubkey for alias {} already exists.".format(args.alias))
+        print("pubkey for alias {} already exists.".format(alias))
         return
     with open(pubkey_path, 'w') as f:
-        f.write(json.dumps({'pub': args.pubkey,
-                            'address': args.address}))
+        f.write(json.dumps({'pub': pubkey,
+                            'address': address}))
 
 
-def about(args):
+def about():
 
     keyobj = crypto.load_key(config.key_file)
     print('key_file:', config.key_file)
@@ -57,9 +57,9 @@ def about(args):
     print('public_sum:', crypto.pubkey_sum(keyobj))
 
 
-def export(args):
+def seed(directory, tree_name):
     """export directory as tree."""
-    tree.export_dir(args.directory, args.tree)
+    tree.export_dir(directory, tree_name)
 
 
 def do_admin(cmd_header, cmd_values_list):
@@ -69,38 +69,29 @@ def do_admin(cmd_header, cmd_values_list):
     admin_client(config.admin_sock_file, commands).run()
 
 
-def raw(args):
+def raw(command):
     """send a raw json command to an admin socket"""
     admin_client = client.PomaresAdminClient
-    commands = [args.command]
+    commands = [command]
     admin_client(config.admin_sock_file, commands).run()
 
 
-def import_tree(args):
+def plant(alias, tree):
     """import (remote) tree"""
-    pubkey_path = os.path.join(config.pubkey_path, args.alias)
+    pubkey_path = os.path.join(config.pubkey_path, alias)
     srv_pubkey, address = crypto.load_pubkey(pubkey_path+'.pubkey')
     my_key = config.key_file
     c = client.PomaresClient(address, my_key, srv_pubkey.pk,
-                             proto.ImportTreeRequest(args.tree))
+                             proto.ImportTreeRequest(tree))
     c.run()
 
 
-def ls(args):
+def ls(seeded, planted):
     """list trees"""
-    if args.exported:
+    if seeded:
         tree_path = os.path.join(config.tree_path, 'exports')
         # display directories only
         for tree_name in os.listdir(tree_path):
             tree_name_path = os.path.join(tree_path, tree_name)
             if(os.path.isdir(tree_name_path)):
                 print("{}".format(tree_name[:len(tree_path)]))
-
-
-def get(args):
-    """get file [remote]"""
-    args.hash
-    args.dirname
-    args.stdout
-
-    tree, hash = args.hash.split('/')
