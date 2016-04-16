@@ -23,7 +23,7 @@ def talk_client(handler, request):
         logger.info('no route '+err)
 
 
-def import_tree_req(handler, request):
+def plant_tree_req(handler, request):
     loop = asyncio.get_event_loop()
     # TODO
     """
@@ -32,14 +32,14 @@ def import_tree_req(handler, request):
             loop.create_unix_connection(proto.PomaresIOProtocol,
                                         config.io_sock_file)
     """
-    new_msg = proto.encode(proto.Ack(b'import reply ' + request.tree))
+    new_msg = proto.encode(proto.Ack(b'plant reply ' + request.tree))
     new_msg = handler.box.encrypt(new_msg)
     handler.send_data(proto.compress_buff(new_msg))
 
 
 # TODO make this a decorator instead
 ROUTES_SERVER = {'Ack': echo,
-                 'ImportTreeRequest': import_tree_req}
+                 'PlantTreeRequest': plant_tree_req}
 
 
 def talk_server(handler, request):

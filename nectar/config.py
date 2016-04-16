@@ -29,8 +29,8 @@ debug_file: %(config_dir)s/debug.log
 index_path: %(config_dir)s/indexes
 object_path: %(config_dir)s/objects
 tree_path: %(config_dir)s/trees
-index_path_exported: %(config_dir)s/indexes/exported/
-index_path_imported: %(config_dir)s/indexes/imported/
+index_path_seeded: %(config_dir)s/indexes/seeded/
+index_path_planted: %(config_dir)s/indexes/planted/
 sock_path: %(config_dir)s/sock
 admin_sock_file : %(config_dir)s/sock/admin.sock
 index_sock_file : %(config_dir)s/sock/index.sock

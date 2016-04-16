@@ -8,13 +8,13 @@ from concurrent.futures import ThreadPoolExecutor
 
 Ack = namedtuple('Ack', ('value',))
 PubKeyReply = namedtuple('PubKeyReply', ('key',))
-ImportTreeRequest = namedtuple('ImportTreeRequest', ('tree'))
+PlantTreeRequest = namedtuple('PlantTreeRequest', ('tree'))
 IOReadChunkRequest = namedtuple('IOReadChunkRequest',
                                 ('filename', 'offset', 'nbytes'))
 
 msg_dict = {'Ack': (1, Ack),
             'PubKeyReply': (2, PubKeyReply),
-            'ImportTreeRequest': (3, ImportTreeRequest),
+            'PlantTreeRequest': (3, PlantTreeRequest),
             'IOReadChunkRequest': (4, IOReadChunkRequest),
             }
 # Reverse lookup:
